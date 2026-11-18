@@ -17,6 +17,8 @@ import { HomePage } from "./pages/Home";
 import { IrrigationPage } from "./pages/Irrigation";
 import { LocationAnalysisPage } from "./pages/LocationAnalysis";
 import { NotFoundPage } from "./pages/NotFound";
+import { PairRobotPage } from "./pages/PairRobot";
+import { RobotPage } from "./pages/Robot";
 import { SatellitePage } from "./pages/Satellite";
 import { RayyanChatPage } from "./rayyan/ChatPage";
 import { RayyanSettingsPage } from "./rayyan/SettingsPage";
@@ -52,6 +54,8 @@ export function App() {
           <Route path="irrigation/:fieldId" element={<IrrigationPage />} />
           <Route path="health/:fieldId" element={<CropHealthPage />} />
           <Route path="satellite/:fieldId" element={<SatellitePage />} />
+          <Route path="robot/:fieldId" element={<RobotPage />} />
+          <Route path="robot/pair/:code" element={<PairRobotPage />} />
           <Route path="assistant/:fieldId" element={<AssistantPage />} />
           <Route path="rayyan" element={<RayyanChatPage />} />
           <Route path="rayyan/settings" element={<RayyanSettingsPage />} />
