@@ -207,6 +207,7 @@ async def ask(
     conversation_id: str | None,
     mode: str | None,
     client_key: str,
+    enforce_rate_limit: bool = True,
 ) -> AskResponse:
     settings = get_rayyan_settings()
     data_mode = resolve_mode(mode)
@@ -216,7 +217,9 @@ async def ask(
     with SessionLocal() as session:
         credential = resolve_credential(session, settings)
 
-    if not limiter.allow(f"rayyan:{client_key}", settings.max_requests_per_hour):
+    if enforce_rate_limit and not limiter.allow(
+        f"rayyan:{client_key}", settings.max_requests_per_hour
+    ):
         raise RateLimitedError(
             "The RAYAN request limit for this hour was reached.",
             details=(

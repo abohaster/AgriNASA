@@ -93,3 +93,37 @@ class KeyStoreError(RayyanError):
 class RateLimitedError(RayyanError):
     code = "RAYAN_RATE_LIMITED"
     status_code = 429
+
+
+class PublicApiAuthError(RayyanError):
+    """Missing, malformed or unknown Fale7 API key on the external endpoint."""
+
+    code = "FALE7_API_UNAUTHORIZED"
+    status_code = 401
+
+
+class PublicApiRevokedError(RayyanError):
+    code = "FALE7_API_REVOKED"
+    status_code = 401
+
+
+class PublicApiRateLimited(RayyanError):
+    code = "FALE7_API_RATE_LIMITED"
+    status_code = 429
+
+
+class AccessLinkGone(RayyanError):
+    """QR access link already used or past its expiry."""
+
+    code = "FALE7_ACCESS_LINK_GONE"
+    status_code = 410
+
+
+class ApiKeyMissing(RayyanError):
+    code = "FALE7_API_KEY_MISSING"
+    status_code = 404
+
+
+class ApiKeyRevoked(RayyanError):
+    code = "FALE7_API_KEY_REVOKED"
+    status_code = 409

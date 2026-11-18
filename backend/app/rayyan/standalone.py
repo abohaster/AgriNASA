@@ -27,6 +27,7 @@ from app.exceptions import AppError
 from app.rayyan import __version__, keystore
 from app.rayyan.api import router
 from app.rayyan.config import get_rayyan_settings
+from app.rayyan.public_api import router as public_api_router
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,7 @@ def create_rayyan_app() -> FastAPI:
         )
 
     app.include_router(router, prefix="/api")
+    app.include_router(public_api_router, prefix="/api")
 
     # The standalone app also mounts the existing read/write routers so the
     # RAYAN screens can list fields and surface the same computed context it

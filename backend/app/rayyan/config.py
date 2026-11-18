@@ -46,6 +46,9 @@ class RayyanSettings(BaseSettings):
     keyfile_path: str = str(SECRETS_DIR / "rayyan_api_keys.key")
     settings_token: str = ""
     max_requests_per_hour: int = 20
+    # External-app keys: a narrower scope (read-only ask) with its own budget.
+    public_api_requests_per_hour: int = 60
+    public_api_access_minutes: int = 10
     max_keys: int = 10
     model_cache_seconds: int = 600
     # Upper bound on the answer length the model is asked for, and the hard
