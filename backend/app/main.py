@@ -37,6 +37,7 @@ from app.db.database import SessionLocal, engine, init_db
 from app.exceptions import AppError
 from app.rayyan import keystore
 from app.rayyan.api import router as rayyan_router
+from app.rayyan.public_api import router as fale7_api_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -148,6 +149,7 @@ app.include_router(farmer.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
 app.include_router(assistant.router, prefix="/api")
 app.include_router(rayyan_router, prefix="/api")
+app.include_router(fale7_api_router, prefix="/api")
 app.include_router(devices.router, prefix="/api")
 app.include_router(devices.readings_router, prefix="/api")
 app.include_router(devices.field_router, prefix="/api")
