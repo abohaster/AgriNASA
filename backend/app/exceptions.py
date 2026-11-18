@@ -45,3 +45,17 @@ class GEEUnavailable(AppError):
 class RateLimited(AppError):
     code = "RATE_LIMITED"
     status_code = 429
+
+
+class DeviceUnauthorized(AppError):
+    """Missing, unknown or revoked field-robot token."""
+
+    code = "DEVICE_UNAUTHORIZED"
+    status_code = 401
+
+
+class PairingCodeGone(AppError):
+    """Pairing QR code already claimed or past its expiry."""
+
+    code = "PAIRING_CODE_GONE"
+    status_code = 410

@@ -21,7 +21,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routers import assistant, demo, farmer, fields, geocode, location, meta, satellite
+from app.api.routers import (
+    assistant,
+    demo,
+    devices,
+    farmer,
+    fields,
+    geocode,
+    location,
+    meta,
+    satellite,
+)
 from app.config import get_settings
 from app.db.database import SessionLocal, engine, init_db
 from app.exceptions import AppError
@@ -138,6 +148,9 @@ app.include_router(farmer.router, prefix="/api")
 app.include_router(demo.router, prefix="/api")
 app.include_router(assistant.router, prefix="/api")
 app.include_router(rayyan_router, prefix="/api")
+app.include_router(devices.router, prefix="/api")
+app.include_router(devices.readings_router, prefix="/api")
+app.include_router(devices.field_router, prefix="/api")
 
 
 # ── Built frontend (single-container deployments) ───────────────────────────
