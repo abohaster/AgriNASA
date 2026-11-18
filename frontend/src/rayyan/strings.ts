@@ -154,6 +154,12 @@ const STRINGS = {
   "chat.validationRejected": ["Rejected — fallback used", "مرفوض — استُخدم البديل الحتمي"],
   "chat.validationSkipped": ["Skipped", "تم التخطي"],
   "chat.rejectedNumbers": ["Withheld numbers", "أرقام حُجبت"],
+  "chat.robotTitle": ["Field robot", "روبوت الحقل"],
+  "chat.robotDescription": [
+    "Pair the ESP32 robot to this field so its soil, air and distance readings sit next to the satellite and model.",
+    "اربط روبوت ESP32 بهذا الحقل لتظهر قراءات التربة والهواء والمسافة بجوار بيانات القمر الصناعي والنموذج.",
+  ],
+  "chat.openRobot": ["Open the robot page", "افتح صفحة الروبوت"],
   "chat.capabilitiesTitle": ["What Fale7 can use now", "ما يستطيع Fale7 استخدامه الآن"],
   "chat.capabilitiesDescription": [
     "Statuses reflect the live AgriNASA configuration and services, not an imagined feature list.",

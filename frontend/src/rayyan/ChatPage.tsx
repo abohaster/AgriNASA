@@ -11,6 +11,7 @@ import { useAsync } from "../hooks/useAsync";
 import { useI18n } from "../i18n/I18nContext";
 import { describeError, rayyanApi, type RayyanErrorInfo } from "./client";
 import { RayyanShell } from "./RayyanShell";
+import { RobotPairPanel } from "../components/robot/RobotPairPanel";
 import { capabilityLabel, useRayyanT } from "./strings";
 import type { CapabilityStatus, RayyanAskResponse, RayyanCapability } from "./types";
 
@@ -459,6 +460,23 @@ export function RayyanChatPage() {
                   </dd>
                 </div>
               </dl>
+            </section>
+          )}
+
+          {selectedFieldId !== null && (
+            <section className="card card-pad" aria-labelledby="rayyan-robot">
+              <h2 id="rayyan-robot" className="text-sm font-semibold">
+                {t("chat.robotTitle")}
+              </h2>
+              <p className="mt-1 text-2xs leading-relaxed text-muted">
+                {t("chat.robotDescription")}
+              </p>
+              <div className="mt-3">
+                <RobotPairPanel fieldId={selectedFieldId} />
+              </div>
+              <Link to={`/robot/${selectedFieldId}`} className="btn-secondary btn-sm mt-3">
+                {t("chat.openRobot")}
+              </Link>
             </section>
           )}
 
