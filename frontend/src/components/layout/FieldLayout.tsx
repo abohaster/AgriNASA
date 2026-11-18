@@ -7,7 +7,7 @@ import { useI18n } from "../../i18n/I18nContext";
 import { daysBetween, formatDate, titleCase, todayIso } from "../../lib/format";
 import { DemoTrials } from "../data/DemoTrials";
 import { ErrorState } from "../ui/AsyncState";
-import { DropIcon, GaugeIcon, LeafIcon, MapPinIcon, SatelliteIcon, SparkIcon, WheatIcon } from "../ui/Icons";
+import { DropIcon, GaugeIcon, LeafIcon, MapPinIcon, SatelliteIcon, SparkIcon, WheatIcon, CpuIcon } from "../ui/Icons";
 import { LoadingState } from "../ui/AsyncState";
 
 const TABS = [
@@ -16,6 +16,7 @@ const TABS = [
   { key: "irrigation", label: "Irrigation", icon: <DropIcon size={15} /> },
   { key: "health", label: "Crop health", icon: <LeafIcon size={15} /> },
   { key: "satellite", label: "Satellite", icon: <SatelliteIcon size={15} /> },
+  { key: "robot", label: "Robot", icon: <CpuIcon size={15} /> },
   { key: "assistant", label: "Assistant", icon: <SparkIcon size={15} /> },
 ] as const;
 
