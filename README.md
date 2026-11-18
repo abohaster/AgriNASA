@@ -157,6 +157,7 @@ credentials JSON; the container reads them from environment variables only.
 | **Irrigation** | Demand class, refill requirement, daily balance chart and the full calculation chain for a chosen analysis date. |
 | **Crop health** | Heat, frost, water, rainfall-anomaly and NDVI indicators with no disease diagnosis, assessed for a chosen analysis date. |
 | **Satellite** | Sentinel-1 relative surface wetness and Sentinel-2 NDVI/NDMI/NDWI with Earth Engine map layers, or a clear "not configured" state. |
+| **Robot** (`/robot/{fieldId}`) | Pairs an ESP32 robot by one-time QR, shows measured soil-moisture/DHT22/ultrasonic readings and their series, and places them beside satellite indices and the water balance without claiming an accuracy gain. |
 | **Assistant** | Chat grounded in the exact computed context, with a rule-based fallback and a "view data sent" disclosure. |
 | **For Farmers** (`/farmer`) | Plain-language field status, water, weather, crop condition and important alerts; technical values sit behind "More details". |
 | **Data Sources** (`/data-sources`) | Only the datasets the backend actually serves, each with a reliability badge, coverage and benefits for a small farmer, a farm owner and an agronomic engineer. |
@@ -493,6 +494,48 @@ receives an API key.
    key-management endpoints, and tune `RAYAN_MAX_REQUESTS_PER_HOUR` if needed.
 4. Linking from a field or location page passes `?field=<id>`, so Fale7
    automatically loads that field's stored soil, climate and water context.
+
+---
+
+## Field robot and on-farm sensors
+
+The **Robot** tab of every field (`/robot/{fieldId}`) pairs a microcontroller
+and displays its readings. Nothing is simulated server-side: values exist only
+after the device posts them.
+
+1. **Pair** — *Create pairing QR* (also on the Fale7 page) produces a one-time
+   code valid for 15 minutes. Opening `/robot/pair/{code}` and pressing
+   *Pair this robot* returns a device key (`ags_…`) exactly once.
+2. **Post** — the robot sends one JSON reading at a time to
+   `POST /api/ingest/readings` with `Authorization: Bearer <device key>`:
+
+   ```json
+   {"soil_moisture_pct": 28.5, "air_temp_c": 31.2, "humidity_pct": 54.0,
+    "distance_cm": 62.0, "measured_at": "2026-11-18T09:30:00Z"}
+   ```
+
+   Any subset of the four values is accepted; `measured_at` defaults to server
+   time and is rejected beyond 30 days old or 10 minutes in the future.
+3. **Watch** — *Connect* polls `/fields/{id}/sensors` every 5 seconds; the page
+   also loads Sentinel-2 NDVI/NDMI, Sentinel-1 relative wetness and the FAO-56
+   water balance for the same field.
+
+Honesty rules specific to this feature:
+
+- The device key is stored only as a SHA-256 hash plus a short prefix. Revoking a
+  device stops ingestion immediately (`401`).
+- The live panel's *local test pattern* preview is labelled, generated in the
+  browser and **never posted** to the backend.
+- Sensor, satellite and model numbers are shown side by side as different
+  instruments with different footprints. The page does not calibrate one from
+  another, does not fuse them into a single "improved" value, and makes no
+  accuracy claim.
+- The soil probe reports a calibrated 0–100 % index of its own ADC range, not
+  volumetric water content unless the sketch is calibrated against a real
+  measurement.
+
+Firmware, wiring table, calibration and troubleshooting:
+[`hardware/README.md`](hardware/README.md).
 
 ---
 
@@ -840,6 +883,14 @@ Base path: `/api`. All errors use one envelope:
 | `GET` | `/fields/{id}/irrigation` | Demand class, refill, balance, confidence (`end`, `mode`) |
 | `GET` | `/fields/{id}/health` | Environmental stress indicators (`end`, `mode`) |
 | `GET` | `/fields/{id}/vegetation` | NDVI availability/series (`mode`) |
+| `GET` | `/fields/{id}/sensors` | Paired devices, latest reading and the last 60 readings |
+| `POST` | `/devices/pairing-codes` | Create a one-time pairing code (`field_id`) |
+| `GET` | `/devices/pairing-codes/{code}` | Check a code without claiming it |
+| `POST` | `/devices/claim` | Burn a code and return the device key once (`201`) |
+| `POST` | `/devices` | Create a device key directly (`field_id`, `label`, `201`) |
+| `GET` | `/devices` | List paired devices (`field_id`) |
+| `DELETE` | `/devices/{id}` | Revoke a device (`204`) |
+| `POST` | `/ingest/readings` | Robot ingest with `Authorization: Bearer <device key>` (`201`) |
 | `POST` | `/farmer-summary` | Simplified check: verdict, health %, soil and weather advice, timeline and map tiles (`mode`) |
 | `GET` | `/farmer-demo-fields` | Four real example fields (wheat, potato, tomato) with validated polygons for one-tap checks |
 | `GET` | `/demo-trials` | Descriptions of the four one-tap trials (one per demo crop plus a prepared field) used by every field tool |
@@ -867,6 +918,9 @@ SQLAlchemy 2 + SQLite by default, created automatically at startup.
 | `irrigation_analyses` | Saved irrigation snapshots |
 | `crop_health_analyses` | Saved health snapshots |
 | `ai_conversations` / `ai_messages` | Chat history and exact context JSON |
+| `pairing_codes` | One-time pairing codes (SHA-256 hash, 15-minute expiry, single use) |
+| `robot_devices` | Paired devices: label, key prefix and hash, revocation, last seen |
+| `sensor_readings` | Robot measurements: soil %, air °C, humidity %, distance cm |
 | `data_sources` | Seeded provenance catalogue |
 
 SQLite is configured with WAL mode, `busy_timeout=30000` and `synchronous=NORMAL`
@@ -884,7 +938,7 @@ cd backend
 .venv/Scripts/python.exe -m pytest tests -q
 ```
 
-The suite (159 tests) runs fully offline in demo mode and covers:
+The suite (286 tests) runs fully offline in demo mode and covers:
 
 - **Science** — ET₀ validity, missing inputs, invalid pairs, negative clamp,
   pressure fallback; Kc stage boundaries/interpolation; root depth; water balance
@@ -902,6 +956,9 @@ The suite (159 tests) runs fully offline in demo mode and covers:
   fallback, stored context, rate/validation errors.
 - **AI explainer** — answers reuse computed values, refuse disease diagnosis,
   report only real data gaps, and cite FAO-56 rather than inventing methods.
+- **Field robot** — single-use and expiring pairing codes, hashed device keys,
+  bearer-only ingest, value-range validation, revoke blocks ingestion, latest
+  reading and 60-point series, cascade delete with the field.
 
 Frontend checks:
 
