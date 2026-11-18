@@ -1,4 +1,7 @@
 import type {
+  Fale7AccessGrant,
+  Fale7AccessLink,
+  Fale7ApiKeyState,
   RayyanAskPayload,
   RayyanAskResponse,
   RayyanAvailability,
@@ -156,4 +159,18 @@ export const rayyanApi = {
 
   ask: (payload: RayyanAskPayload) =>
     request<RayyanAskResponse>("/ask", { method: "POST", body: JSON.stringify(payload) }),
+
+  /** External-app credential. Management routes require the settings token on the server. */
+  fale7State: (signal?: AbortSignal) => request<Fale7ApiKeyState>("/api", { signal }),
+
+  fale7Generate: () => request<Fale7ApiKeyState>("/api/generate", { method: "POST" }),
+
+  fale7Revoke: () => request<Fale7ApiKeyState>("/api/revoke", { method: "POST" }),
+
+  fale7AccessLink: () =>
+    request<Fale7AccessLink>("/api/access-link", { method: "POST" }),
+
+  /** Consumed exactly once; the token itself is the credential on the scanned device. */
+  fale7Reveal: (token: string, signal?: AbortSignal) =>
+    request<Fale7AccessGrant>(`/api/access/${encodeURIComponent(token)}`, { signal }),
 };

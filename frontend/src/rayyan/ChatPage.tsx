@@ -10,6 +10,7 @@ import { useDataMode } from "../context/DataModeContext";
 import { useAsync } from "../hooks/useAsync";
 import { useI18n } from "../i18n/I18nContext";
 import { describeError, rayyanApi, type RayyanErrorInfo } from "./client";
+import { Fale7ApiSection } from "./Fale7ApiSection";
 import { RayyanShell } from "./RayyanShell";
 import { RobotPairPanel } from "../components/robot/RobotPairPanel";
 import { capabilityLabel, useRayyanT } from "./strings";
@@ -513,6 +514,8 @@ export function RayyanChatPage() {
           </InfoNote>
         </div>
       </div>
+
+      <Fale7ApiSection />
     </RayyanShell>
   );
 }

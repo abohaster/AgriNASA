@@ -136,3 +136,40 @@ export interface RayyanAskResponse {
   provider_error: RayyanProviderError | null;
   usage: Record<string, unknown> | null;
 }
+
+/** Fale7 API (external apps). Contracts mirror `backend/app/rayyan/public_schemas.py`. */
+export type Fale7ApiStatus = "active" | "revoked";
+
+export interface Fale7ApiKeyState {
+  exists: boolean;
+  status: Fale7ApiStatus | null;
+  /** Present only in the response that issues or re-issues the key. */
+  key: string | null;
+  key_prefix: string | null;
+  created_at: string | null;
+  revoked_at: string | null;
+  last_used_at: string | null;
+  request_count: number;
+  requests_this_hour: number;
+  rate_limit_per_hour: number;
+  window_resets_at: string | null;
+  last_status: string | null;
+  last_error_code: string | null;
+  scopes: string[];
+}
+
+export interface Fale7AccessLink {
+  token: string;
+  expires_at: string;
+}
+
+export interface Fale7AccessGrant {
+  key: string;
+  key_prefix: string;
+  status: Fale7ApiStatus;
+  created_at: string;
+  scopes: string[];
+  rate_limit_per_hour: number;
+  request_count: number;
+  requests_this_hour: number;
+}

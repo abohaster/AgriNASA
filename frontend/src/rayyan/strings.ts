@@ -187,6 +187,139 @@ const STRINGS = {
   "chat.fallbackNotice": ["No AI answer was produced. This is a deterministic, labelled summary.", "لم تُنتج إجابة ذكاء اصطناعي. هذا ملخص حتمي مُوسَّم."],
   "chat.yourQuestion": ["You", "أنت"],
   "chat.rayyan": ["Fale7", "Fale7"],
+
+  "fapi.title": ["Fale7 API", "واجهة Fale7 API"],
+  "fapi.description": [
+    "Use this API key to connect your application to Fale7 AI. The backend computes the field context; the model only explains it.",
+    "استخدم مفتاح API هذا لربط تطبيقك بذكاء Fale7. يحسب الخادم سياق الحقل، والنموذج يفسّره فقط.",
+  ],
+  "fapi.statusActive": ["Active", "نشط"],
+  "fapi.statusRevoked": ["Revoked", "ملغى"],
+  "fapi.keyLabel": ["API key", "مفتاح API"],
+  "fapi.keyOnce": [
+    "This is the only time the full key is shown. Copy it now and store it safely.",
+    "هذه المرة الوحيدة التي يظهر فيها المفتاح كاملًا. انسخه الآن واحفظه بأمان.",
+  ],
+  "fapi.copy": ["Copy API key", "نسخ مفتاح API"],
+  "fapi.copied": ["Copied to the clipboard.", "تم النسخ إلى الحافظة."],
+  "fapi.copyFailed": [
+    "The key could not be copied. Select it and copy manually.",
+    "تعذّر نسخ المفتاح. حدّده وانسخه يدويًا.",
+  ],
+  "fapi.copyViaLink": [
+    "Copy through a secure link (shown once, then discarded)",
+    "نسخ عبر رابط آمن (يُعرض مرة واحدة ثم يُهمل)",
+  ],
+  "fapi.regenerate": ["Regenerate key", "إعادة إنشاء المفتاح"],
+  "fapi.generate": ["Generate key", "إنشاء مفتاح"],
+  "fapi.revoke": ["Revoke key", "إلغاء المفتاح"],
+  "fapi.confirmRegenerate": [
+    "Regenerate the key? Every application using the current key stops working immediately.",
+    "إعادة إنشاء المفتاح؟ سيتوقف كل تطبيق يستخدم المفتاح الحالي فورًا.",
+  ],
+  "fapi.confirmRevoke": [
+    "Revoke the key? Every application using it stops working immediately.",
+    "إلغاء المفتاح؟ سيتوقف كل تطبيق يستخدمه فورًا.",
+  ],
+  "fapi.generated": ["New key issued.", "تم إصدار مفتاح جديد."],
+  "fapi.revoked": ["The key was revoked.", "تم إلغاء المفتاح."],
+  "fapi.noKey": [
+    "No key yet. One is created automatically when this section opens.",
+    "لا يوجد مفتاح بعد. يُنشأ تلقائيًا عند فتح هذا القسم.",
+  ],
+  "fapi.protectedTitle": ["API management is protected", "إدارة API محمية"],
+  "fapi.protectedBody": [
+    "Unlock API settings in this browser with the settings token, or manage the key from the server that runs AgriNASA. Keys are never issued to an anonymous visitor.",
+    "افتح إعدادات API في هذا المتصفح برمز الإعدادات، أو أدر المفتاح من الخادم الذي يشغّل AgriNASA. لا تُصدر المفاتيح لزائر مجهول.",
+  ],
+  "fapi.unlock": ["Open API settings", "فتح إعدادات API"],
+  "fapi.qrTitle": ["QR code", "رمز QR"],
+  "fapi.qrDescription": [
+    "Scanning opens a secure page that shows the key once on your phone. Each code expires in {minutes} minutes and works once.",
+    "يفتح المسح صفحة آمنة تعرض المفتاح مرة واحدة على هاتفك. ينتهي كل رمز خلال {minutes} دقائق ويعمل مرة واحدة.",
+  ],
+  "fapi.qrCreate": ["Create QR code", "إنشاء رمز QR"],
+  "fapi.qrRefresh": ["New QR code", "رمز QR جديد"],
+  "fapi.qrWarning": [
+    "Scanning shows the key once. Do not refresh that page or share the QR.",
+    "يظهر المفتاح مرة واحدة عند المسح. لا تحدّث تلك الصفحة ولا تشارك رمز QR.",
+  ],
+  "fapi.qrExpired": ["This QR code has expired. Create a new one.", "انتهت صلاحية رمز QR. أنشئ رمزًا جديدًا."],
+  "fapi.usageTitle": ["API usage", "استخدام API"],
+  "fapi.totalRequests": ["Requests so far", "إجمالي الطلبات"],
+  "fapi.thisHour": ["This hour", "هذه الساعة"],
+  "fapi.rateLimit": ["Rate limit", "حد الاستخدام"],
+  "fapi.perHour": ["{count} per hour", "{count} في الساعة"],
+  "fapi.lastRequest": ["Last request", "آخر طلب"],
+  "fapi.never": ["Never", "أبدًا"],
+  "fapi.lastStatus": ["Last status", "آخر حالة"],
+  "fapi.resetAt": ["Window resets", "يتجدد الحد"],
+  "fapi.keyPrefix": ["Key prefix", "بادئة المفتاح"],
+  "fapi.created": ["Created", "أُنشئ"],
+  "fapi.scope": ["Scope", "النطاق"],
+  "fapi.scopeAsk": ["Ask about one field (read-only)", "سؤال عن حقل واحد (قراءة فقط)"],
+  "fapi.autoFailed": ["The API key could not be created.", "تعذّر إنشاء مفتاح API."],
+
+  "fapi.docsTitle": ["API documentation", "توثيق API"],
+  "fapi.docsIntro": [
+    "Any application can ask Fale7 about a field. Send your key with each request; never embed a real key in frontend code.",
+    "يمكن لأي تطبيق سؤال Fale7 عن حقل. أرسل مفتاحك مع كل طلب، ولا تضع مفتاحًا حقيقيًا في كود الواجهة.",
+  ],
+  "fapi.docsAuthTitle": ["Authentication", "المصادقة"],
+  "fapi.docsAuthBody": [
+    "Send the key in the Authorization header of every request:",
+    "أرسل المفتاح في ترويسة Authorization مع كل طلب:",
+  ],
+  "fapi.docsEndpointTitle": ["Endpoint", "نقطة النهاية"],
+  "fapi.docsRequestTitle": ["Request body", "جسم الطلب"],
+  "fapi.docsRequestBody": [
+    "question (required, 2–1000 characters), field_id (required when the workspace has more than one field), crop (optional, must match the field), language (\"en\" or \"ar\"), conversation_id (optional, for follow-ups).",
+    "question (مطلوب، 2–1000 حرف)، field_id (مطلوب عند وجود أكثر من حقل)، crop (اختياري ويجب أن يطابق الحقل)، language (\"en\" أو \"ar\")، conversation_id (اختياري للمتابعة).",
+  ],
+  "fapi.docsResponseTitle": ["Response", "الاستجابة"],
+  "fapi.docsResponseBody": [
+    "answer, recommendation, environmental_data, data_sources, warnings, limitations, confidence, provider, model, data_mode, validation and usage.",
+    "answer و recommendation و environmental_data و data_sources و warnings و limitations و confidence و provider و model و data_mode و validation و usage.",
+  ],
+  "fapi.docsExampleRequest": ["Example request", "مثال على الطلب"],
+  "fapi.docsExampleResponse": ["Example response (abridged)", "مثال على الاستجابة (مختصر)"],
+  "fapi.docsRateTitle": ["Rate limits", "حدود الاستخدام"],
+  "fapi.docsRateBody": [
+    "Each key allows {count} requests per hour. Exceeding it returns HTTP 429 with the reset time in the message.",
+    "يسمح كل مفتاح بـ {count} طلبًا في الساعة. تجاوزها يعيد HTTP 429 مع وقت التجدد في الرسالة.",
+  ],
+  "fapi.docsErrorsTitle": ["Error responses", "استجابات الأخطاء"],
+  "fapi.docsErrorsMeaning": ["Meaning", "المعنى"],
+  "fapi.docsErrorsBody": [
+    "Errors use one envelope: {\"error\": {\"code\", \"message\", \"details\"}}.",
+    "تستخدم الأخطاء غلافًا واحدًا: {\"error\": {\"code\", \"message\", \"details\"}}.",
+  ],
+  "fapi.docsNoSecret": [
+    "The examples use a placeholder key. Never commit a real key to source code or a repository.",
+    "تستخدم الأمثلة مفتاحًا بديلًا. لا تضع مفتاحًا حقيقيًا في الكود أو المستودع.",
+  ],
+
+  "access.title": ["Your Fale7 API key", "مفتاح Fale7 API"],
+  "access.description": [
+    "This secure page shows the key once. Copy it into your application now.",
+    "تعرض هذه الصفحة الآمنة المفتاح مرة واحدة. انسخه إلى تطبيقك الآن.",
+  ],
+  "access.warning": [
+    "Do not refresh this page: the link is single-use and will stop working.",
+    "لا تحدّث هذه الصفحة: الرابط يعمل مرة واحدة وسيتوقف.",
+  ],
+  "access.goneTitle": ["This link can no longer be used", "لم يعد هذا الرابط صالحًا"],
+  "access.goneBody": [
+    "It expired, was already opened, or the key was regenerated. Create a new QR code on the Fale7 page.",
+    "انتهت صلاحيته أو فُتح سابقًا أو أُعيد إنشاء المفتاح. أنشئ رمز QR جديدًا من صفحة Fale7.",
+  ],
+  "access.revokedTitle": ["This key was revoked", "تم إلغاء هذا المفتاح"],
+  "access.revokedBody": [
+    "Generate a new key on the Fale7 page to connect an application.",
+    "أنشئ مفتاحًا جديدًا من صفحة Fale7 لربط تطبيق.",
+  ],
+  "access.back": ["Open Fale7", "افتح Fale7"],
+  "access.checking": ["Opening the secure link…", "جارٍ فتح الرابط الآمن…"],
 } as const satisfies Record<string, Pair>;
 
 export type RayyanStringKey = keyof typeof STRINGS;
