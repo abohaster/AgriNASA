@@ -1,0 +1,28 @@
+.git
+.gitignore
+*.log
+.env
+.env.*
+!.env.example
+
+# Local secrets and data never belong in an image.
+backend/secrets/
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend build artifacts (rebuilt inside the image)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-rayyan/
+frontend/.vite/
+*.tsbuildinfo

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="RAYAN — grounded Google Gemini explanations for AgriNASA's computed field data."
+    />
+    <meta name="theme-color" content="#0f2e23" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>RAYAN — AgriNASA Gemini assistant</title>
+    <script>
+      // Apply the stored theme and language before first paint to avoid a flash.
+      (function () {
+        try {
+          var stored = localStorage.getItem("agrinasa:theme");
+          var dark =
+            stored === "dark" ||
+            (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.classList.add("dark");
+          document.documentElement.style.colorScheme = dark ? "dark" : "light";
+
+          var lang = localStorage.getItem("agrinasa:language");
+          if (lang !== "ar" && lang !== "en") {
+            lang = (navigator.language || "en").toLowerCase().indexOf("ar") === 0 ? "ar" : "en";
+          }
+          document.documentElement.lang = lang;
+          document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+        } catch (error) {
+          /* storage may be unavailable; defaults stay English + light */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/rayyan/main.tsx"></script>
+  </body>
+</html>

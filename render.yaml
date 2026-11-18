@@ -1,0 +1,38 @@
+# One-click deployment blueprint for Render (render.com).
+# Dashboard: New + -> Blueprint -> connect this repository.
+# Values marked `sync: false` are requested securely in the Render UI and are
+# never stored in git. Earth Engine keys stay server-side.
+services:
+  - type: web
+    name: agrinasa
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATA_MODE
+        value: live
+      - key: SEED_DEMO_TRIALS
+        value: "1"
+      - key: GEE_SERVICE_ACCOUNT
+        sync: false
+      - key: GEE_PROJECT
+        sync: false
+      - key: GEE_PRIVATE_KEY_JSON
+        sync: false
+      - key: RAYAN_GEMINI_API_KEY
+        sync: false
+      - key: RAYAN_SETTINGS_TOKEN
+        sync: false
+    # Durable storage (Starter plan + paid disk): uncomment the `disk` block
+    # below and add this entry to the envVars list above so fields survive restarts:
+    #   - key: DATABASE_URL
+    #     value: sqlite:////var/data/agrinasa.db
+    # disk:
+    #   name: agrinasa-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

@@ -1,0 +1,18 @@
+# Backend runtime dependencies.
+# Pinned for reproducible student builds. Python 3.11+ is required.
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+httpx==0.28.1
+numpy==2.2.1
+SQLAlchemy==2.0.36
+cryptography==50.0.2
+
+# Google Earth Engine Python client. Imported lazily: the API runs without it
+# until satellite analysis is configured. See README "Google Earth Engine".
+earthengine-api==1.7.52
+
+# Tests (installed with the same file so `pytest` works out of the box).
+pytest==8.3.4

@@ -1,0 +1,268 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    --c-ink: 20 35 27;
+    --c-paper: 251 251 247;
+    --c-card: 255 255 255;
+    --c-line: 224 230 219;
+    --c-muted: 91 107 96;
+
+    --c-forest-50: 238 245 240;
+    --c-forest-100: 220 235 225;
+    --c-forest-200: 185 215 197;
+    --c-forest-300: 141 187 161;
+    --c-forest-400: 91 151 122;
+    --c-forest-500: 53 122 92;
+    --c-forest-600: 36 98 72;
+    --c-forest-700: 27 78 58;
+    --c-forest-800: 21 61 46;
+    --c-forest-900: 15 46 35;
+    --c-forest-950: 8 29 22;
+
+    --c-sage-50: 246 248 243;
+    --c-sage-100: 237 242 231;
+    --c-sage-200: 221 230 212;
+    --c-sage-300: 194 209 182;
+    --c-sage-400: 159 179 143;
+
+    --c-clay-50: 250 245 238;
+    --c-clay-100: 242 230 213;
+    --c-clay-200: 226 201 169;
+    --c-clay-400: 196 154 104;
+    --c-clay-500: 169 124 75;
+    --c-clay-600: 138 98 56;
+
+    --c-survey-50: 238 245 248;
+    --c-survey-100: 220 235 241;
+    --c-survey-200: 184 214 225;
+    --c-survey-500: 53 122 148;
+    --c-survey-600: 39 98 119;
+    --c-survey-700: 29 76 93;
+
+    --grid-dot: rgb(20 35 27 / 0.08);
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --c-ink: 226 237 231;
+    --c-paper: 10 17 14;
+    --c-card: 18 27 23;
+    --c-line: 40 55 47;
+    --c-muted: 150 168 158;
+
+    /* Ramps reverse in dark mode: low steps become tinted surfaces, high
+       steps become readable foreground colours. */
+    --c-forest-50: 20 34 27;
+    --c-forest-100: 25 42 34;
+    --c-forest-200: 34 58 46;
+    --c-forest-300: 52 90 71;
+    --c-forest-400: 83 131 106;
+    --c-forest-500: 112 166 135;
+    --c-forest-600: 140 192 160;
+    --c-forest-700: 172 214 188;
+    --c-forest-800: 200 232 213;
+    --c-forest-900: 222 243 231;
+    --c-forest-950: 240 251 245;
+
+    --c-sage-50: 16 24 20;
+    --c-sage-100: 21 31 26;
+    --c-sage-200: 28 41 34;
+    --c-sage-300: 38 55 45;
+    --c-sage-400: 52 74 61;
+
+    --c-clay-50: 30 24 17;
+    --c-clay-100: 40 31 21;
+    --c-clay-200: 62 47 32;
+    --c-clay-400: 130 101 65;
+    --c-clay-500: 165 126 80;
+    --c-clay-600: 196 158 111;
+
+    --c-survey-50: 16 25 29;
+    --c-survey-100: 21 34 40;
+    --c-survey-200: 30 50 58;
+    --c-survey-500: 72 138 168;
+    --c-survey-600: 90 158 188;
+    --c-survey-700: 118 186 214;
+
+    --grid-dot: rgb(226 237 231 / 0.07);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Arabic UI uses a Naskh stack; Latin numerals and symbols still render
+     cleanly because the fallback chain ends in a sans-serif. */
+  html[lang="ar"] body {
+    font-family: "Noto Naskh Arabic", "Segoe UI", Tahoma, "Traditional Arabic",
+      Arial, sans-serif;
+    font-feature-settings: normal;
+    line-height: 1.75;
+  }
+
+  /* Uppercase + wide tracking are Latin typographic devices; disable them so
+     Arabic labels keep their natural letterforms. */
+  html[lang="ar"] .eyebrow,
+  html[lang="ar"] .field-label {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  html[lang="ar"] .tracking-\[0\.08em\],
+  html[lang="ar"] .tracking-\[0\.14em\],
+  html[lang="ar"] .tracking-\[0\.16em\] {
+    letter-spacing: 0;
+  }
+
+  ::selection {
+    @apply bg-forest-200 text-forest-950;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-survey-500 ring-offset-2 ring-offset-paper;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold tracking-[-0.02em] text-ink;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Leaflet ships light chrome; tone it to the paper palette without hiding data. */
+  .leaflet-container {
+    @apply bg-sage-100 font-sans;
+    z-index: 0;
+  }
+
+  .leaflet-control-attribution {
+    @apply bg-paper/90 text-[10px] text-muted;
+  }
+
+  .leaflet-control-zoom a {
+    @apply bg-paper text-ink;
+  }
+
+  /* Dark map tiles: OSM has no dark style, so the raster is inverted and
+     desaturated. NASA GIBS layers are intentionally excluded. */
+  .dark .map-tiles-dark {
+    filter: brightness(0.72) invert(1) hue-rotate(180deg) saturate(0.65)
+      contrast(0.95);
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-10;
+  }
+
+  .container-narrow {
+    @apply mx-auto w-full max-w-3xl px-5 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply font-mono text-2xs font-medium uppercase tracking-[0.16em] text-forest-600;
+  }
+
+  .card {
+    @apply rounded-card border border-line bg-card shadow-card;
+  }
+
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn border-forest-800 bg-forest-800 text-paper hover:bg-forest-900 hover:border-forest-900;
+  }
+
+  .btn-secondary {
+    @apply btn border-line bg-card text-ink hover:border-forest-300 hover:bg-forest-50;
+  }
+
+  .btn-ghost {
+    @apply btn border-transparent bg-transparent text-forest-700 hover:bg-forest-50;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-line bg-card px-3 py-2.5 text-sm text-ink placeholder:text-muted/60 focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/20;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-[0.08em] text-muted;
+  }
+
+  .mono-data {
+    @apply font-mono tabular-nums tracking-tight;
+  }
+
+  .table-cell {
+    @apply border-b border-line/70 px-3 py-2.5 text-start text-sm;
+  }
+
+  .link-underline {
+    @apply text-forest-700 underline decoration-forest-300 decoration-1 underline-offset-4 hover:decoration-forest-600;
+  }
+
+  /* Permanently dark panel used for equations and the assistant header. It
+     stays dark in both themes so the formula styling does not invert. */
+  .panel-night {
+    background-color: #0b1f17;
+    color: #f4faf6;
+  }
+
+  .surface-grid {
+    background-image: radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.sage.300") transparent;
+  }
+
+  .scroll-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scroll-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-sage-300;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

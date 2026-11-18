@@ -1,0 +1,393 @@
+================================================================================
+AgriNASA — Student Guide
+NASA-Powered Smart Agriculture Decision Support for Wheat
+================================================================================
+
+This guide walks you through installing, running and understanding the project.
+For the full technical reference, see README.md and ARCHITECTURE.md.
+
+
+--------------------------------------------------------------------------------
+1. WHAT YOU ARE BUILDING
+--------------------------------------------------------------------------------
+
+AgriNASA is a decision-support web app for one wheat field. It:
+
+  * downloads public NASA POWER weather data for a coordinate,
+  * calculates ET0 with the FAO-56 Penman-Monteith equation,
+  * converts ET0 into crop water use (ETc = Kc x ET0) using wheat growth stages,
+  * runs a daily root-zone water balance,
+  * classifies irrigation demand and estimates the refill requirement,
+  * reports heat, frost, water and rainfall stress indicators,
+  * optionally explains all of this in plain language through an AI assistant.
+
+The important design rule:
+
+  DETERMINISTIC CODE CALCULATES EVERY NUMBER.
+  THE AI ONLY EXPLAINS THOSE NUMBERS.
+
+The AI cannot create measurements, change irrigation amounts, invent missing
+values, diagnose disease or claim machine-learning accuracy.
+
+
+--------------------------------------------------------------------------------
+2. WHAT YOU NEED
+--------------------------------------------------------------------------------
+
+  * Python 3.11 or newer (3.12 recommended)
+  * Node.js 18 or newer (with npm)
+  * A web browser
+  * Internet only if you use live NASA data; demo mode works offline
+
+You do NOT need a NASA account or an AI key. NASA POWER is public, and the
+assistant has a built-in rule-based mode when no AI key is configured.
+
+
+--------------------------------------------------------------------------------
+3. INSTALL AND RUN (Windows, Git Bash)
+--------------------------------------------------------------------------------
+
+Open two terminals.
+
+TERMINAL 1 — BACKEND
+
+  cd D:/AgriNASA/backend
+  python -m venv .venv
+  .venv/Scripts/python.exe -m pip install -r requirements.txt
+  .venv/Scripts/python.exe -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+
+Wait until you see:
+  "AgriNASA API ready (data mode: live)"
+
+Check it in a browser:
+  http://127.0.0.1:8000/api/health
+  http://127.0.0.1:8000/docs
+
+TERMINAL 2 — FRONTEND
+
+  cd D:/AgriNASA/frontend
+  npm install
+  npm run dev -- --host 127.0.0.1 --port 5173
+
+Open:
+  http://127.0.0.1:5173
+
+On macOS/Linux use:
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  uvicorn main:app --reload --host 127.0.0.1 --port 8000
+
+
+--------------------------------------------------------------------------------
+4. CONFIGURATION (OPTIONAL)
+--------------------------------------------------------------------------------
+
+Copy the template:
+
+  cp .env.example .env
+
+The template sets DATA_MODE=demo, so it works offline. The most useful setting:
+
+  DATA_MODE=demo   -> replay a cached real NASA POWER snapshot (offline)
+  DATA_MODE=live   -> call NASA POWER over the network
+
+If you skip the copy step, the built-in default is live and needs internet.
+
+Demo mode is ideal for a classroom or a first run. It uses real values captured
+for Qena, Egypt (2025-11-01 to 2026-03-10), not synthetic data.
+
+NEVER put real API keys in .env.example or in the source code. Put them only in
+your local .env file. The frontend never receives provider keys; all AI calls are
+made by the backend.
+
+
+--------------------------------------------------------------------------------
+5. CREATE YOUR FIRST FIELD
+--------------------------------------------------------------------------------
+
+Option A — through the UI
+
+  1. Click "New field".
+  2. Enter a name and coordinates (or search a place name).
+  3. Optional: press "Draw field boundary" and click four corners on the map,
+     in order around the field edge. The corners are joined automatically and
+     the estimated area appears in hectares and feddan. Use "Undo corner" or
+     "Clear outline" to correct it; fewer than four corners cannot be saved as
+     an outline.
+  4. Choose a planting date, area, soil texture and irrigation system.
+  5. Tip: click "Use demo field values" to fill Qena, Egypt and a valid season.
+  6. Save. You are taken to the dashboard.
+
+The outline is stored exactly as you clicked it. It is not a satellite
+measurement or a surveyed boundary, and it does not change how weather is
+sampled: NASA POWER remains a coarse grid-cell value for the field centre.
+
+Option B — through the API
+
+  curl -X POST http://127.0.0.1:8000/api/fields \
+    -H "Content-Type: application/json" \
+    -d '{
+      "name": "Demo wheat field",
+      "latitude": 26.15,
+      "longitude": 32.72,
+      "crop_id": "wheat",
+      "planting_date": "2025-11-15",
+      "area_ha": 4.2,
+      "soil_texture": "loam",
+      "irrigation_system": "sprinkler",
+      "location_label": "Qena, Egypt"
+    }'
+
+The response contains an "id". Open:
+
+  http://127.0.0.1:5173/dashboard/<id>
+
+Valid planting dates must be on or after 1981-01-01 (NASA POWER coverage) and no
+more than one year in the future.
+
+
+--------------------------------------------------------------------------------
+6. TOUR OF THE SCREENS
+--------------------------------------------------------------------------------
+
+HOME
+  Explains the platform, its scope, data sources and honesty rules.
+
+FIELDS
+  Lists your fields and the current day after planting.
+
+USER GUIDE (/guide)
+  A step-by-step walkthrough for Egyptian users. Switch between English and
+  Arabic at the top of the page; Arabic switches the whole page to right-to-left
+  layout. It covers creating a field, drawing the outline, reading the dashboard,
+  irrigation, crop health, the assistant, demo mode, unit conversions (including
+  feddan) and common questions.
+
+DASHBOARD
+  * Latest temperature, humidity, wind, solar radiation and ET0.
+  * 30-day overview chart.
+  * Irrigation priority and crop-health priority cards.
+  * Map context using NASA GIBS satellite imagery.
+  * Assistant preview and data-source list.
+
+ANALYTICS
+  Six charts: temperature, rainfall, ET0, humidity, wind and solar radiation.
+  Each chart shows units, date range and coverage. In demo mode the date range
+  displays the actual snapshot window and the controls are disabled.
+
+IRRIGATION
+  * Demand class: LOW, MODERATE, HIGH or UNKNOWN.
+  * Confidence label with explicit reasons (capped at MEDIUM for POWER data).
+  * Calculation chain: stage -> Kc -> ET0 -> ETc -> balance -> refill.
+  * Daily depletion chart against TAW and RAW.
+  * Net and gross refill requirement.
+  * A full list of assumptions and limitations.
+
+CROP HEALTH
+  * Heat-stress days, frost days, root-zone water stress, rainfall anomaly.
+  * NDVI and NDMI from Sentinel-2 via Earth Engine, with the pass date; the card
+    says "unavailable" when Earth Engine is not configured.
+  * Overall status: good, moderate, stressed or insufficient data.
+  * No disease, pest or nutrient diagnosis is attempted.
+
+SATELLITE
+  Sentinel-1 relative surface wetness and Sentinel-2 NDVI/NDMI over the saved
+  boundary (or centre + 0.5 km), with map layers and explicit limitations.
+
+FARMER GUIDE (/farmer-guide)
+  A phone-friendly page with no technical terms.
+    - Three real example fields (Delta, Nubaria reclamation, prepared Sharqia
+      field) run a full check in one tap.
+    - Location by GPS, map tap or governorate; crop from eight options.
+    - "I want to plant now": verdict, readiness percentage, month/temperature/
+      soil checks, today's weather and a five-day outlook from Open-Meteo.
+    - "The crop is already planted": plant health percentage and rating from the
+      latest satellite image, soil-moisture irrigation advice, weather/outlook.
+    - Timeline guidance: expected emergence window, seed depth, risks (dry or wet
+      seedbed, rain crusting, heat, frost, wind) and plain actions.
+    - Map with one-tap layers: vegetation health (NDVI), soil moisture
+      (Sentinel-1) and a true-colour satellite image.
+  Percentages are descriptive scores from weather and satellite data, not yield
+  forecasts or diagnoses. Demo mode shows an explicit "unavailable" result.
+  Numbers pass an automatic plausibility check; a short note appears if any
+  reading had to be corrected. Colours on the map are display-only and never
+  change the reported percentages or advice.
+
+ASSISTANT
+  Ask questions such as:
+    - "Why is irrigation demand high?"
+    - "How much water should I apply?"
+    - "Which data is missing?"
+    - "Explain ET0 and Kc."
+    - "How reliable is this analysis?"
+  Every answer includes the exact structured data sent to the model under
+  "View data sent to the assistant".
+
+
+--------------------------------------------------------------------------------
+7. HOW TO READ THE NUMBERS
+--------------------------------------------------------------------------------
+
+ET0 (mm/day)
+  Atmospheric evaporative demand for a reference grass crop. Calculated, not
+  measured on your field.
+
+Kc (dimensionless)
+  Wheat crop coefficient for the current growth stage, from FAO-56 defaults.
+
+ETc (mm/day)
+  Crop water use = Kc x ET0.
+
+TAW / RAW (mm)
+  Total and readily available water in the root zone. RAW = 0.55 x TAW for wheat.
+
+Depletion fraction
+  How much of TAW is currently used. 0 = field capacity; 1 = wilting point.
+
+Demand class
+  HIGH at >= 80 % depletion, or >= 65 % when the week is dry and ETc is high.
+  MODERATE at >= 55 %. LOW below 55 %.
+
+Refill requirement
+  Net = water needed to return the root zone to field capacity.
+  Gross = net / application efficiency (drip 0.90, sprinkler 0.75, surface 0.60).
+
+Confidence
+  A qualitative label built from documented factors. NASA POWER's coarse grid
+  caps confidence at MEDIUM.
+
+
+--------------------------------------------------------------------------------
+8. DEMO MODE
+--------------------------------------------------------------------------------
+
+Toggle "Demo" in the header, or use ?mode=demo on API calls.
+
+  * Replays a real cached NASA POWER snapshot for Qena, Egypt.
+  * Dates: 2025-11-01 to 2026-03-10.
+  * A persistent banner marks the data as DEMO.
+  * Crop stage uses the snapshot planting date (2025-11-15), not your field's.
+  * The rain-anomaly indicator is "unknown" because no climatology is cached.
+  * No synthetic values are generated.
+
+This is useful when there is no internet or when you want reproducible output.
+
+
+--------------------------------------------------------------------------------
+9. ENABLING THE AI (OPTIONAL)
+--------------------------------------------------------------------------------
+
+1. Edit your local .env file (never .env.example):
+
+     AI_API_KEY=your-key-here
+     AI_BASE_URL=https://api.openai.com/v1
+     AI_MODEL=gpt-4o-mini
+
+2. Restart the backend.
+3. Check http://127.0.0.1:8000/api/health — "ai_configured" should be true.
+
+The backend sends the model a strict system prompt plus a structured JSON
+context. It sends no API key to the browser. If the provider is down, slow or
+rate-limited, the deterministic explainer answers instead, and the response says
+so.
+
+Rate limit: AI_MAX_REQUESTS_PER_HOUR (default 30) per IP.
+
+
+--------------------------------------------------------------------------------
+10. ENABLING NDVI (OPTIONAL, ADVANCED)
+--------------------------------------------------------------------------------
+
+NASA POWER does not serve vegetation indices. To enable NDVI you need:
+
+  * an Earthdata/AppEEARS account and token,
+  * NDVI_PROVIDER=appears and NDVI_API_TOKEN=... in .env,
+  * a provider implementation in backend/app/services/vegetation.py.
+
+This build reports NDVI as unavailable rather than inventing values. The UI
+explains this. Never commit the token.
+
+
+--------------------------------------------------------------------------------
+11. RUNNING THE TESTS
+--------------------------------------------------------------------------------
+
+Backend (58 tests, fully offline):
+
+  cd backend
+  .venv/Scripts/python.exe -m pytest tests -q
+
+Frontend type check and production build:
+
+  cd frontend
+  npm run typecheck
+  npm run build
+
+Tests cover ET0 edge cases, Kc stage boundaries, the water balance, NDVI,
+every stress threshold, demand classes, confidence caps, API validation and
+error envelopes, demo responses, and the assistant's honesty rules.
+
+
+--------------------------------------------------------------------------------
+12. PROJECT MAP
+--------------------------------------------------------------------------------
+
+backend/app/science/       Pure calculations (no network, no database)
+backend/app/services/      NASA fetching, processing, analyses, demo replay
+backend/app/api/routers/   HTTP endpoints
+backend/app/ai/            Context builder, prompts, provider, fallback explainer
+backend/app/crops/         Crop registry and the wheat profile
+backend/app/db/            SQLAlchemy models, repository, SQLite engine
+backend/app/schemas/       Pydantic request/response contracts
+backend/tests/             pytest suite
+frontend/src/pages/        Home, fields, dashboard, analytics, irrigation, health,
+                           satellite, farmer guide, assistant
+frontend/src/components/   Layout, cards, charts, map, chat, provenance badges
+
+
+--------------------------------------------------------------------------------
+13. COMMON PROBLEMS
+--------------------------------------------------------------------------------
+
+"database is locked"
+  Run only one backend process. WAL mode and a 30 s busy timeout are already
+  configured. Restart the server after changing .env.
+
+"NASA_UNAVAILABLE"
+  No internet or POWER is down. Switch DATA_MODE=demo.
+
+Frontend cannot reach the API
+  Make sure the backend is on 127.0.0.1:8000. Vite proxies /api there.
+
+"node: command not found"
+  Install Node.js 18+ and reopen the terminal, or add its folder to PATH.
+
+Vegetation panel is empty
+  Expected without an NDVI provider. The API reports available=false with a reason.
+
+AI answers look templated
+  No AI key is configured, or the provider failed/was rate-limited. Check the
+  response's "provider" and "notice" fields.
+
+Dates in demo mode are historical
+  Intentional. Demo replays a fixed snapshot; this is labelled everywhere.
+
+
+--------------------------------------------------------------------------------
+14. HONESTY CHECKLIST (KEEP THIS TRUE IF YOU EXTEND THE PROJECT)
+--------------------------------------------------------------------------------
+
+  [ ] Every displayed number is traceable to a formula or a named source.
+  [ ] Satellite, reanalysis, estimated and calculated values are distinguishable.
+  [ ] Missing values stay missing; they are never filled to make a chart pretty.
+  [ ] Demo data is labelled and never presented as live or as the user's field.
+  [ ] No field boundary is invented.
+  [ ] No disease, pest or nutrient diagnosis is claimed.
+  [ ] No ML accuracy or confidence percentage is invented.
+  [ ] The AI explains computed data only; it never calculates or changes values.
+  [ ] API keys stay in the backend and out of git.
+  [ ] Users see friendly errors, not stack traces.
+
+================================================================================
+End of guide.
+================================================================================

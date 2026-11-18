@@ -1,0 +1,44 @@
+# ── Secrets ──────────────────────────────────────────────────────────────────
+# Local environment only. The committed template is .env.example.
+.env
+.env.*
+!.env.example
+
+# Google Earth Engine service-account key (see README setup steps).
+backend/secrets/
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Local databases (including SQLite WAL/SHM sidecars) ─────────────────────
+*.db
+*.db-wal
+*.db-shm
+backend/data/
+backend/tests/fixtures/**/*.db
+
+# ── Node / frontend ─────────────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# ── Logs and OS files ───────────────────────────────────────────────────────
+*.log
+logs/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor settings ─────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
