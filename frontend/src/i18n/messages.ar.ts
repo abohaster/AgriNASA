@@ -1905,9 +1905,9 @@ export const AR_MESSAGES: Record<string, string> = {
   "Produced by scientific models, reanalysis or interpolation — not a measurement at the field.":
     "ناتجة من نماذج علمية أو إعادة تحليل أو استيفاء — مش قياس في الأرض.",
   "A prediction of conditions that have not happened yet.": "توقّع لحالة لسه ما حصلتش.",
-  "No measured source is connected yet": "مفيش مصدر مقاس متصل لحد الآن",
-  "AgriNASA does not currently connect to on-farm sensors or a weather-station feed, so no dataset on this page is classified as measured. Field-level values come from reanalysis, satellites, models or forecasts, and each one says so.":
-    "AgriNASA مش متصلة حاليًا بحساسات في الأرض ولا ببثّ محطة أرصاد، فمفيش مجموعة هنا مصنّفة إنها مقاسة. قيم الأرض جاية من إعادة تحليل أو أقمار صناعية أو نماذج أو تنبؤات، وكل واحدة بتقول ده.",
+  "No catalogue dataset is measured": "مفيش مجموعة بيانات في الكتالوج مصنّفة إنها مقاسة",
+  "None of the connected catalogue datasets is a measured feed: field values come from reanalysis, satellites, models or forecasts, and each one says so. Readings from a robot you pair yourself are measured point observations and appear only on that field's Robot page, not in this catalogue.":
+    "مفيش مجموعة في الكتالوج متصلة كمصدر مقاس: قيم الحقل جاية من إعادة تحليل أو أقمار صناعية أو نماذج أو تنبؤات، وكل واحدة بتقول ده. قراءات الروبوت اللي تربطه بنفسك قياسات نقطية مقاسة وبتظهر بس في صفحة روبوت الحقل، مش في الكتالوج ده.",
   "Dataset catalogue": "قائمة مصادر البيانات",
   "datasets served by the backend": "مجموعة بيانات بيوفّرها السيرفر",
   "When data is missing": "لما البيانات تكون ناقصة",
@@ -2119,6 +2119,139 @@ export const AR_MESSAGES: Record<string, string> = {
     "التحليل من تاريخ الزراعة لحد {date}. لو مفيش تاريخ محدد، الخادم بيستخدم أحدث يوم متاح.",
   "The satellite index always shows the latest usable pass, not the selected date.":
     "مؤشر الأقمار الصناعية بيعرض دائمًا أحدث صورة صالحة، مش التاريخ المحدد.",
+
+  // Field robot / ESP32 pairing
+  "Field robot": "روبوت الحقل",
+  "Robot": "الروبوت",
+  "Test pattern": "نمط اختبار",
+  "Test pattern · not a measurement": "نمط اختبار · ليست قياسًا",
+  "Create key": "إنشاء مفتاح",
+  "Device name (optional)": "اسم الجهاز (اختياري)",
+  "Device key for {label}": "مفتاح جهاز {label}",
+  "Paste it into the robot sketch now. It is shown once and cannot be recovered; if you lose it, revoke the device and create a new key.":
+    "الصق المفتاح في كود الروبوت الآن. بيظهر مرة واحدة ومش ممكن استرجاعه؛ لو ضاع، ألغِ الجهاز وأنشئ مفتاحًا جديدًا.",
+  "Copied": "تم النسخ",
+  "Copy key": "نسخ المفتاح",
+  "Open the robot page": "افتح صفحة الروبوت",
+  "Pair a robot": "ربط روبوت",
+  "Step 1 · create a one-time code for {field}": "الخطوة 1 · أنشئ كودًا لمرة واحدة لحقل {field}",
+  "Create a key directly": "إنشاء مفتاح مباشرة",
+  "Use this when you are wiring the board at this computer and do not need the QR step.":
+    "استخدم ده لما تكون بتوصل الأسلاك على الكمبيوتر ومش محتاج خطوة الـ QR.",
+  "Create pairing QR": "إنشاء QR للربط",
+  "Pairing QR code": "كود QR للربط",
+  "A pairing QR opens a one-time page that issues the robot's key. The code expires after 15 minutes and stops working once used.":
+    "كود QR للربط بيفتح صفحة لمرة واحدة بتصدر مفتاح الروبوت. الكود بينتهي بعد 15 دقيقة وبيتوقف بعد أول استخدام.",
+  "The pairing code could not be created.": "تعذّر إنشاء كود الربط.",
+  "This pairing code has expired. Create a new one.": "كود الربط ده انتهت صلاحيته. أنشئ كودًا جديدًا.",
+  "Expired": "منتهي",
+  "Valid for {minutes} more minutes · pairs to {field}":
+    "صالح لمدة {minutes} دقيقة إضافية · مربوط بحقل {field}",
+  "Scanning opens the pairing page, where the device key is shown once. Keep the screen private until the code expires.":
+    "المسح بيفتح صفحة الربط، وهناك يظهر مفتاح الجهاز مرة واحدة. خلي الشاشة بعيد عن الآخرين لحد ما الكود ينتهي.",
+  "Replace with a new code": "استبدله بكود جديد",
+  "Robot ingest endpoint": "عنوان إرسال قراءات الروبوت",
+  "Address": "العنوان",
+  "Authentication": "المصادقة",
+  "Body": "محتوى الطلب",
+  "Send one reading per measurement. Any subset of the four values is accepted; measured_at defaults to the server time.":
+    "أرسل قراءة واحدة لكل قياس. أي مجموعة من القيم الأربع مقبولة؛ وmeasured_at بياخد وقت الخادم افتراضيًا.",
+  "The ingest endpoint could not be reached.": "تعذّر الوصول إلى عنوان إرسال القراءات.",
+  "The device key could not be created.": "تعذّر إنشاء مفتاح الجهاز.",
+  "No robot is paired to this field yet.": "لا يوجد روبوت مربوط بالحقل ده لحد الآن.",
+  "Last seen {when}": "آخر اتصال {when}",
+  "Never connected": "لم يتصل بعد",
+  "Active": "نشط",
+  "Revoked": "ملغى",
+  "Revoke": "إلغاء",
+  "Confirm revoke": "تأكيد الإلغاء",
+  "Keep it": "الإبقاء عليه",
+  "Revoking…": "جارٍ الإلغاء…",
+  "The device could not be revoked.": "تعذّر إلغاء الجهاز.",
+  "Revoking a device stops its readings immediately.": "إلغاء الجهاز بيوقف قراءاته فورًا.",
+  "The sensor feed could not be loaded.": "تعذّر تحميل قراءات الحساسات.",
+  "Live sensor panel": "لوحة الحساسات المباشرة",
+  "Readings arrive from the robot through the ingest endpoint.":
+    "القراءات بتوصل من الروبوت عبر عنوان الإرسال.",
+  "Refresh": "تحديث",
+  "Connect": "اتصال",
+  "Stop listening": "إيقاف الاستماع",
+  "Listening every 5 s": "بيستمع كل 5 ثوانٍ",
+  "Not connected": "غير متصل",
+  "Pair a robot to start listening.": "اربط روبوتًا لبدء الاستماع.",
+  "Live · last reading {n} min ago": "مباشر · آخر قراءة قبل {n} دقيقة",
+  "Recent · last reading {n} h ago": "حديث · آخر قراءة قبل {n} ساعة",
+  "Stale · last reading {n} h ago": "قديم · آخر قراءة قبل {n} ساعة",
+  "Stale · last reading {n} d ago": "قديم · آخر قراءة قبل {n} يوم",
+  "Volumetric-water-style index from the probe": "مؤشر رطوبة من المجس على نمط الرطوبة الحجمية",
+  "DHT22 in the canopy layer": "DHT22 داخل طبقة المجموع الخضري",
+  "Canopy distance": "مسافة المجموع الخضري",
+  "HC-SR04, sensor to the crop surface": "HC-SR04، من الحساس لسطح المحصول",
+  "Press Connect to poll the stored readings. The panel refreshes every 5 seconds while the robot keeps posting.":
+    "اضغط اتصال لسحب القراءات المخزنة. اللوحة بتتحدث كل 5 ثوانٍ طالما الروبوت بيبعت.",
+  "Preview the panel with a local test pattern": "معاينة اللوحة بنمط اختبار محلي",
+  "Hide test pattern": "إخفاء نمط الاختبار",
+  "The test pattern is generated in this browser and is never saved.":
+    "نمط الاختبار بيتولّد في المتصفح ده ومش بيتحفظ أبدًا.",
+  "Soil moisture series": "سلسلة رطوبة التربة",
+  "Each point is one reading stored by the backend.": "كل نقطة قراءة واحدة محفوظة في الخادم.",
+  "Field robot · probe at the sensor depth": "روبوت الحقل · مجس على عمق الحساس",
+  "Soil moisture %": "رطوبة التربة ٪",
+  "Air conditions": "حالة الهواء",
+  "Temperature and relative humidity from the DHT22.": "الحرارة والرطوبة النسبية من DHT22.",
+  "Field robot · canopy air": "روبوت الحقل · هواء المجموع الخضري",
+  "Air temperature °C": "حرارة الهواء °م",
+  "Humidity %": "الرطوبة ٪",
+  "No readings yet. Once the robot posts, the latest values and the last 60 readings appear here.":
+    "لا توجد قراءات بعد. بمجرد أن يرسل الروبوت، تظهر أحدث القيم وآخر 60 قراءة هنا.",
+  "Paired devices": "الأجهزة المربوطة",
+  "Satellite view": "عرض الأقمار الصناعية",
+  "Satellite indices are unavailable.": "مؤشرات الأقمار الصناعية غير متاحة.",
+  "Satellite and model next to the robot": "الأقمار الصناعية والنموذج بجوار الروبوت",
+  "Different instruments, different footprints. Shown together so disagreement is visible, not averaged away.":
+    "أدوات مختلفة وبصمات مساحية مختلفة. معروضة معًا ليظهر الاختلاف بدل ما يتلاشى في متوسط.",
+  "Reload satellite": "إعادة تحميل الأقمار الصناعية",
+  "Open the satellite page": "افتح صفحة الأقمار الصناعية",
+  "Latest pass {date}": "أحدث مرور {date}",
+  "Satellite-derived · 10 m pixels": "مشتق من الأقمار الصناعية · بكسلات 10 م",
+  "Model · weather grid · not a probe reading": "نموذج · شبكة طقس · ليست قراءة مجس",
+  "Model · root-zone water balance": "نموذج · موازنة مائية لمنطقة الجذور",
+  "Radar backscatter": "الارتداد الراداري",
+  "Relative wetness from Sentinel-1 · not volumetric moisture":
+    "رطوبة نسبية من Sentinel-1 · ليست رطوبة حجمية",
+  "Read the three columns carefully": "اقرأ الأعمدة الثلاثة بتركيز",
+  "A soil probe reads one point at one depth. Sentinel-1 sees a radar surface signal over the field. The water balance estimates root-zone depletion from a weather grid. They answer different questions and may disagree; this page does not calibrate one from another or claim an accuracy gain.":
+    "مجس التربة بيقرأ نقطة واحدة على عمق واحد. Sentinel-1 بيشوف إشارة رادار سطحية على مستوى الحقل. الموازنة المائية بتقدّر النقص في منطقة الجذور من شبكة طقس. كل واحد بيجاوب على سؤال مختلف وممكن يختلفوا؛ والصفحة مش بتعاير واحد من التاني ولا بتدّعي زيادة في الدقة.",
+  "What this page is for": "الغرض من الصفحة",
+  "Pair an ESP32 robot to this field, let it post soil-moisture, DHT22 and ultrasonic readings, and read them beside the satellite and water-balance numbers. Sensor values are stored exactly as sent; nothing is smoothed or invented.":
+    "اربط روبوت ESP32 بالحقل، خليه يبعت قراءات رطوبة التربة وDHT22 والموجات فوق الصوتية، وشوفها بجوار أرقام الأقمار الصناعية والموازنة المائية. قيم الحساسات بتتحفظ كما أُرسلت؛ لا تنعيم ولا اختلاق.",
+  "Loading devices…": "جارٍ تحميل الأجهزة…",
+  "Link this robot": "ربط الروبوت ده",
+  "A one-time code from the robot page opens this screen. Pairing issues the device key the ESP32 uses to post readings.":
+    "كود لمرة واحدة من صفحة الروبوت بيفتح الشاشة دي. الربط بيصدر مفتاح الجهاز اللي ESP32 بيستخدمه لإرسال القراءات.",
+  "No code in the link": "لا يوجد كود في الرابط",
+  "Open the robot page from your field and create a pairing QR first.":
+    "افتح صفحة الروبوت من حقلك وأنشئ QR للربط أولاً.",
+  "Go to My Fields": "اذهب إلى حقولي",
+  "Checking the code…": "جارٍ فحص الكود…",
+  "This code cannot be used": "الكود ده غير صالح للاستخدام",
+  "The code was already used or has expired. Create a new QR on the robot page.":
+    "الكود مستخدم من قبل أو انتهت صلاحيته. أنشئ QR جديدًا من صفحة الروبوت.",
+  "The code is not recognised. Create a new QR on the robot page.":
+    "الكود غير معروف. أنشئ QR جديدًا من صفحة الروبوت.",
+  "This pairing code is no longer valid. Create a new one on the robot page.":
+    "كود الربط ده ما بقاش صالحًا. أنشئ واحدًا جديدًا من صفحة الروبوت.",
+  "The device could not be paired.": "تعذّر ربط الجهاز.",
+  "Pairing code": "كود الربط",
+  "Valid": "صالح",
+  "Field": "الحقل",
+  "Expires": "ينتهي",
+  "Pairing…": "جارٍ الربط…",
+  "Pair this robot": "اربط الروبوت",
+  "Open the live sensor panel": "افتح لوحة الحساسات المباشرة",
+  "How the key is stored": "كيف يُخزَّن المفتاح",
+  "The server keeps only a hash and a short prefix of the device key. It cannot be shown again, and revoking the device stops its readings immediately.":
+    "الخادم بيحفظ بصمة تجزئة وبداية قصيرة من مفتاح الجهاز بس. مش ممكن يظهر تاني، وإلغاء الجهاز بيوقف قراءاته فورًا.",
 };
 
 
