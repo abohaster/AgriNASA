@@ -50,8 +50,9 @@ def test_capabilities_in_demo_mode(rayyan_client: TestClient):
     assert statuses["disease_diagnosis"] == "NOT_IMPLEMENTED"
     assert statuses["pest_identification"] == "NOT_IMPLEMENTED"
     assert statuses["yield_prediction"] == "NOT_IMPLEMENTED"
-    assert statuses["continuous_monitoring"] == "NOT_IMPLEMENTED"
-    assert statuses["on_farm_sensors"] == "NOT_IMPLEMENTED"
+    # A paired robot can stream readings, so these are implemented features now.
+    assert statuses["continuous_monitoring"] == "AVAILABLE"
+    assert statuses["on_farm_sensors"] == "AVAILABLE"
     assert statuses["irrigation_schedule"] == "NOT_IMPLEMENTED"
     assert "disease_diagnosis" in body["unavailable_ids"]
 
