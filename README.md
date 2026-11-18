@@ -495,6 +495,32 @@ receives an API key.
 4. Linking from a field or location page passes `?field=<id>`, so Fale7
    automatically loads that field's stored soil, climate and water context.
 
+### Fale7 API for external applications
+
+The **Fale7 API** section at the bottom of `/rayyan` issues one read-only API
+credential per workspace and lets you regenerate or revoke it.
+
+- The key is returned once, in the response that issues it and through a
+  single-use QR link (`/rayyan/api/access/{token}`, 10 minutes). Only a SHA-256
+  hash is used for lookup; a Fernet-encrypted copy exists solely to deliver the
+  key through the QR page. The dashboard then shows the prefix only.
+- Revoking or regenerating replaces the stored hash and deletes every pending
+  access link, so the previous key stops working immediately.
+- Key management uses the same access rule as Gemini settings: a client on the
+  server itself, or the `X-Rayyan-Settings-Token` header when
+  `RAYAN_SETTINGS_TOKEN` is configured. Set that variable before exposing the
+  app publicly; without it the section reports that management is protected.
+- `RAYAN_PUBLIC_API_REQUESTS_PER_HOUR` (default 60) sets the per-key hourly
+  budget and `RAYAN_PUBLIC_API_ACCESS_MINUTES` (default 10) the QR-link lifetime.
+
+Endpoint: `POST /api/rayyan/v1/ask` with
+`Authorization: Bearer fl7_…` and
+`{"question": "...", "field_id": 1, "crop": "wheat", "language": "en"}`.
+It returns the grounded answer, recommendation, environmental data, sources,
+warnings, limitations, confidence, validation result and usage counters. The
+beginner-friendly request/response reference, error table and curl example are
+in the collapsible **API documentation** panel inside the section.
+
 ---
 
 ## Field robot and on-farm sensors
