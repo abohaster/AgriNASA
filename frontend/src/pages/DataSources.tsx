@@ -235,9 +235,9 @@ export function DataSourcesPage() {
                 </div>
               ))}
             </div>
-            <InfoNote tone="warn" title={t("No measured source is connected yet")}>
+            <InfoNote tone="warn" title={t("No catalogue dataset is measured")}>
               {t(
-                "AgriNASA does not currently connect to on-farm sensors or a weather-station feed, so no dataset on this page is classified as measured. Field-level values come from reanalysis, satellites, models or forecasts, and each one says so.",
+                "None of the connected catalogue datasets is a measured feed: field values come from reanalysis, satellites, models or forecasts, and each one says so. Readings from a robot you pair yourself are measured point observations and appear only on that field's Robot page, not in this catalogue.",
               )}
             </InfoNote>
           </section>
