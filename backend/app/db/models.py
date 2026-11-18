@@ -85,6 +85,12 @@ class Field(Base):
     conversations: Mapped[list["AIConversation"]] = relationship(
         back_populates="field", cascade="all, delete-orphan"
     )
+    robot_devices: Mapped[list["RobotDevice"]] = relationship(
+        back_populates="field", cascade="all, delete-orphan"
+    )
+    sensor_readings: Mapped[list["SensorReading"]] = relationship(
+        back_populates="field", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (Index("ix_fields_user_crop", "user_id", "crop_id"),)
 
@@ -226,6 +232,76 @@ class AIMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     conversation: Mapped[AIConversation] = relationship(back_populates="messages")
+
+
+class PairingCode(Base):
+    """One-time code shown as a QR; claiming it mints a new device key."""
+
+    __tablename__ = "pairing_codes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_id: Mapped[int] = mapped_column(ForeignKey("fields.id", ondelete="CASCADE"), nullable=False)
+    code_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class RobotDevice(Base):
+    """A physical sensor node paired to one field.
+
+    Only a SHA-256 hash of the bearer token is stored; the plaintext token is
+    shown once when the device is created.
+    """
+
+    __tablename__ = "robot_devices"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_id: Mapped[int] = mapped_column(
+        ForeignKey("fields.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    label: Mapped[str] = mapped_column(String(60), nullable=False)
+    token_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    field: Mapped[Field] = relationship(back_populates="robot_devices")
+    readings: Mapped[list["SensorReading"]] = relationship(
+        back_populates="device", cascade="all, delete-orphan"
+    )
+
+
+class SensorReading(Base):
+    """One upload from a field robot.
+
+    `measured_at` is when the device sampled (device clock when supplied),
+    `received_at` is when the server accepted it. Values are nullable because a
+    node may not have every sensor populated; at least one is required at the
+    API boundary.
+    """
+
+    __tablename__ = "sensor_readings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    device_id: Mapped[int] = mapped_column(
+        ForeignKey("robot_devices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    field_id: Mapped[int] = mapped_column(
+        ForeignKey("fields.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    soil_moisture_pct: Mapped[float | None] = mapped_column(Float)
+    air_temp_c: Mapped[float | None] = mapped_column(Float)
+    humidity_pct: Mapped[float | None] = mapped_column(Float)
+    distance_cm: Mapped[float | None] = mapped_column(Float)
+    measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    device: Mapped[RobotDevice] = relationship(back_populates="readings")
+    field: Mapped[Field] = relationship(back_populates="sensor_readings")
+
+    __table_args__ = (Index("ix_sensor_readings_field_measured", "field_id", "measured_at"),)
 
 
 class DataSourceRecord(Base):
