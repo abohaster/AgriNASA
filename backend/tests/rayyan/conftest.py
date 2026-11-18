@@ -231,12 +231,24 @@ def rayyan_client(fake: FakeGemini) -> TestClient:
 
 @pytest.fixture(autouse=True)
 def clean_state(fake: FakeGemini):
+    from app.ai.rate_limit import SlidingWindowLimiter
     from app.db.database import SessionLocal, engine
+    from app.db.models import PublicApiAccessToken, PublicApiKey
+    from app.rayyan import api, orchestrator, public_api
+    from sqlalchemy import delete
 
     keystore.ensure_schema(engine)
     with SessionLocal() as session:
         session.execute(keystore.rayyan_api_keys.delete())
+        session.execute(delete(PublicApiAccessToken))
+        session.execute(delete(PublicApiKey))
         session.commit()
+
+    # Each test gets a fresh budget: the limiters are process-wide and the
+    # suite runs far more requests than one hour of real traffic would.
+    public_api.admin_limiter = SlidingWindowLimiter()
+    orchestrator.limiter = SlidingWindowLimiter()
+    api.limiter = orchestrator.limiter
 
     directory.clear()
     verified_models.clear()
