@@ -304,6 +304,51 @@ class SensorReading(Base):
     __table_args__ = (Index("ix_sensor_readings_field_measured", "field_id", "measured_at"),)
 
 
+class PublicApiKey(Base):
+    """API key issued to an external app so it can call Fale7.
+
+    One row per workspace user. The key is looked up by its SHA-256 hash and
+    stored encrypted (Fernet) so a single-use QR link can deliver it once
+    without keeping any plaintext at rest.
+    """
+
+    __tablename__ = "public_api_keys"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    key_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    key_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    request_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    window_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    window_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_status: Mapped[str | None] = mapped_column(String(24))
+    last_error_code: Mapped[str | None] = mapped_column(String(48))
+
+    __table_args__ = (Index("ix_public_api_keys_hash", "key_hash"),)
+
+
+class PublicApiAccessToken(Base):
+    """Single-use link (rendered as a QR) that reveals the API key once."""
+
+    __tablename__ = "public_api_access_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    api_key_id: Mapped[int] = mapped_column(
+        ForeignKey("public_api_keys.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class DataSourceRecord(Base):
     __tablename__ = "data_sources"
 
