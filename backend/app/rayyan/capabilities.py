@@ -83,16 +83,18 @@ NEVER_IMPLEMENTED: list[Capability] = [
     _cap(
         "continuous_monitoring",
         "Continuous farm monitoring",
-        "NOT_IMPLEMENTED",
-        "AgriNASA is request-driven. It does not poll, stream or watch a field, and "
-        "it sends no alerts. Each analysis runs when a page or API call asks for it.",
+        "AVAILABLE",
+        "A paired ESP32 robot can post readings continuously and the live sensor "
+        "panel refreshes every 5 seconds while it is open. There are no push alerts, "
+        "and analyses outside that panel still run only when requested.",
     ),
     _cap(
         "on_farm_sensors",
         "On-farm sensor data",
-        "NOT_IMPLEMENTED",
-        "No soil-moisture probes, weather stations or IoT feeds are connected. NASA "
-        "POWER values are reanalysis, not sensor readings.",
+        "AVAILABLE",
+        "Soil-moisture, DHT22 and ultrasonic readings from a paired robot are stored "
+        "as measured values. Until a robot is paired, no sensor feed exists; NASA "
+        "POWER values remain reanalysis, not sensor readings.",
     ),
     _cap(
         "soil_lab_tests",
