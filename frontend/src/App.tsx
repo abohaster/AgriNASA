@@ -22,6 +22,7 @@ import { RobotPage } from "./pages/Robot";
 import { SatellitePage } from "./pages/Satellite";
 import { RayyanChatPage } from "./rayyan/ChatPage";
 import { RayyanSettingsPage } from "./rayyan/SettingsPage";
+import { Fale7AccessPage } from "./rayyan/Fale7AccessPage";
 
 /** Reset scroll on navigation, but preserve anchored deep links from the landing page. */
 function ScrollToTop() {
@@ -59,6 +60,7 @@ export function App() {
           <Route path="assistant/:fieldId" element={<AssistantPage />} />
           <Route path="rayyan" element={<RayyanChatPage />} />
           <Route path="rayyan/settings" element={<RayyanSettingsPage />} />
+          <Route path="rayyan/api/access/:token" element={<Fale7AccessPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
