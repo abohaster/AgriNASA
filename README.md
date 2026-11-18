@@ -123,6 +123,28 @@ grid cell nearest the saved field centre, never averaged over the polygon.
 
 ---
 
+## Deploy online
+
+The repository ships a single Docker image that builds the React app and serves
+it from FastAPI on `$PORT`, so one service runs the whole site with no CORS
+setup.
+
+**Render (recommended).** Push this repository to GitHub, then either:
+
+- open **Dashboard → New + → Blueprint** and pick the repository — `render.yaml`
+  creates the service and asks for the Earth Engine and Fale7 values securely, or
+- create a **Web Service** manually: Language **Docker**, health check
+  `/api/health`, and set `DATA_MODE=live`, `SEED_DEMO_TRIALS=1`,
+  `GEE_SERVICE_ACCOUNT`, `GEE_PROJECT` and `GEE_PRIVATE_KEY_JSON` (the whole
+  service-account JSON on one line).
+
+Free instances sleep when idle and lose their SQLite file on redeploy. For
+durable fields, use a paid instance with a disk mounted at `/var/data` and set
+`DATABASE_URL=sqlite:////var/data/agrinasa.db`. Never commit `.env` or the
+credentials JSON; the container reads them from environment variables only.
+
+---
+
 ## What the platform does
 
 | Screen | Purpose |
