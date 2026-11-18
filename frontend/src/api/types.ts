@@ -1009,3 +1009,52 @@ export interface LocationRequestPayload {
   crop_id?: string | null;
   label?: string | null;
 }
+
+export interface PairingCode {
+  code: string;
+  field_id: number;
+  field_name: string;
+  expires_at: string;
+}
+
+export interface PairingCodeInfo {
+  valid: boolean;
+  field_id: number;
+  field_name: string;
+  expires_at: string;
+}
+
+export interface RobotDevice {
+  id: number;
+  field_id: number;
+  label: string;
+  token_prefix: string;
+  active: boolean;
+  created_at: string;
+  last_seen_at: string | null;
+}
+
+export interface DeviceToken {
+  token: string;
+  device: RobotDevice;
+  field_name: string;
+}
+
+export interface SensorReading {
+  id: number;
+  device_id: number;
+  field_id: number;
+  soil_moisture_pct: number | null;
+  air_temp_c: number | null;
+  humidity_pct: number | null;
+  distance_cm: number | null;
+  measured_at: string;
+  received_at: string;
+}
+
+export interface FieldSensors {
+  field_id: number;
+  devices: RobotDevice[];
+  latest: SensorReading | null;
+  readings: SensorReading[];
+}

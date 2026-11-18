@@ -9,6 +9,7 @@ import type {
   DataMode,
   DataSourcesResponse,
   DemoField,
+  DeviceToken,
   DemoInfo,
   DemoTrial,
   EnvironmentResponse,
@@ -16,6 +17,7 @@ import type {
   FarmerSummaryRequest,
   Field,
   FieldCreate,
+  FieldSensors,
   FieldUpdate,
   GeocodeResult,
   HealthCheck,
@@ -23,10 +25,14 @@ import type {
   IrrigationAnalysis,
   LocationOverview,
   LocationRequestPayload,
+  PairingCode,
+  PairingCodeInfo,
   ReverseGeocodeResult,
+  RobotDevice,
   SatelliteAnalysis,
   SatelliteFieldOptions,
   SatelliteRequestPayload,
+  SensorReading,
   SoilBlock,
   VegetationBlock,
   VegetationResponse,
@@ -298,5 +304,53 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
       signal,
+    }),
+
+  // Field robot / on-farm sensors
+  fieldSensors: (fieldId: number, signal?: AbortSignal) =>
+    request<FieldSensors>(`/fields/${fieldId}/sensors`, { signal }),
+
+  createPairingCode: (fieldId: number) =>
+    request<PairingCode>("/devices/pairing-codes", {
+      method: "POST",
+      body: JSON.stringify({ field_id: fieldId }),
+    }),
+
+  pairingCodeInfo: (code: string, signal?: AbortSignal) =>
+    request<PairingCodeInfo>(`/devices/pairing-codes/${encodeURIComponent(code)}`, { signal }),
+
+  claimPairingCode: (code: string, label?: string) =>
+    request<DeviceToken>("/devices/claim", {
+      method: "POST",
+      body: JSON.stringify({ code, label: label || undefined }),
+    }),
+
+  createDevice: (fieldId: number, label?: string) =>
+    request<DeviceToken>("/devices", {
+      method: "POST",
+      body: JSON.stringify({ field_id: fieldId, label: label || undefined }),
+    }),
+
+  listDevices: (fieldId?: number, signal?: AbortSignal) =>
+    request<RobotDevice[]>(`/devices${fieldId ? `?field_id=${fieldId}` : ""}`, { signal }),
+
+  revokeDevice: (deviceId: number) =>
+    request<void>(`/devices/${deviceId}`, { method: "DELETE" }),
+
+  /** Posts one reading with a device token, exactly like the robot firmware does. */
+  ingestReading: (
+    token: string,
+    reading: {
+      soil_moisture_pct?: number;
+      air_temp_c?: number;
+      humidity_pct?: number;
+      distance_cm?: number;
+      measured_at?: string;
+    },
+  ) =>
+    request<SensorReading>("/ingest/readings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(reading),
     }),
 };
