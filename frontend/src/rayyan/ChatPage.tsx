@@ -9,8 +9,8 @@ import { AlertIcon, CheckIcon, SendIcon, SparkIcon } from "../components/ui/Icon
 import { useDataMode } from "../context/DataModeContext";
 import { useAsync } from "../hooks/useAsync";
 import { useI18n } from "../i18n/I18nContext";
-import { describeError, rayyanApi, type RayyanErrorInfo } from "./client";
-import { Fale7ApiSection } from "./Fale7ApiSection";
+import { formatDateTime, formatNumber } from "../lib/format";
+import { describeError, rayyanApi, type RayyanErrorInfo } from "./client";import { Fale7ApiSection } from "./Fale7ApiSection";
 import { RayyanShell } from "./RayyanShell";
 import { RobotPairPanel } from "../components/robot/RobotPairPanel";
 import { capabilityLabel, useRayyanT } from "./strings";
@@ -172,6 +172,117 @@ function ErrorPanel({ error, onDismiss }: { error: RayyanErrorInfo; onDismiss: (
         </div>
       </div>
     </div>
+  );
+}
+
+/** Shows the live field inputs Fale7 reasons over, with their data nature. */
+function FieldEvidence({ fieldId }: { fieldId: number }) {
+  const { t } = useRayyanT();
+  const { tm } = useI18n();
+  const { mode } = useDataMode();
+  const irrigation = useAsync(
+    (signal) => api.irrigation(fieldId, { mode, signal }),
+    [fieldId, mode],
+  );
+  const images = useAsync((signal) => api.fieldImages(fieldId, { limit: 1 }, signal), [fieldId]);
+
+  const robot = irrigation.data?.robot_soil_moisture ?? null;
+  const requirement = irrigation.data?.water_requirement ?? null;
+  const latestImage = images.data?.images[0] ?? null;
+  const freshRobot = robot?.status === "fresh" && robot.latest_pct != null;
+
+  return (
+    <section className="card card-pad" aria-labelledby="rayyan-evidence">
+      <h2 id="rayyan-evidence" className="text-sm font-semibold">
+        {t("chat.evidenceTitle")}
+      </h2>
+      <p className="mt-1 text-2xs leading-relaxed text-muted">{t("chat.evidenceDescription")}</p>
+
+      {irrigation.status === "loading" && <p className="mt-3 text-xs text-muted">{t("common.loading")}</p>}
+      {irrigation.status === "error" && (
+        <p className="mt-3 text-2xs text-clay-600">{t("chat.evidenceUnavailable")}</p>
+      )}
+
+      {irrigation.status === "success" && robot && (
+        <dl className="mt-3 space-y-2.5 text-2xs leading-relaxed text-muted">
+          <div>
+            <dt className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-ink">{t("chat.evidenceRobot")}</span>
+              {freshRobot && (
+                <StatusPill tone="good" dot={false}>
+                  {t("chat.evidenceMeasured")}
+                </StatusPill>
+              )}
+            </dt>
+            <dd className="mt-0.5">
+              {freshRobot ? (
+                t("chat.evidenceMeasuredAt", {
+                  value: formatNumber(robot.latest_pct, 1),
+                  time: formatDateTime(robot.measured_at),
+                  sensor: robot.sensor_id ?? "—",
+                })
+              ) : (
+                t("chat.evidenceNoRobot")
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="flex flex-wrap items-center gap-1.5">
+              <span className="font-semibold text-ink">{t("chat.evidenceWater")}</span>
+              {requirement?.status === "estimated" && (
+                <StatusPill
+                  tone={requirement.method === "robot_soil_moisture" ? "neutral" : "warn"}
+                  dot={false}
+                >
+                  {t("chat.evidenceEstimated")}
+                </StatusPill>
+              )}
+            </dt>
+            <dd className="mt-0.5">
+              {requirement?.status === "estimated" && requirement.gross_mm != null
+                ? t("chat.evidenceWaterValue", { value: formatNumber(requirement.gross_mm, 1) })
+                : t("chat.evidenceNoWater")}
+            </dd>
+          </div>
+        </dl>
+      )}
+
+      {images.status === "success" && (
+        <div className="mt-3 border-t border-line/70 pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-2xs font-semibold text-ink">{t("chat.evidenceImage")}</p>
+            <Link to={`/robot/${fieldId}`} className="text-2xs link-underline">
+              {t("chat.openRobot")}
+            </Link>
+          </div>
+          {latestImage ? (
+            <div className="mt-2 flex gap-2">
+              <img
+                src={latestImage.file_url}
+                alt=""
+                className="h-16 w-16 rounded-md border border-line object-cover"
+                loading="lazy"
+              />
+              <div className="min-w-0 text-2xs leading-relaxed text-muted">
+                <p>{formatDateTime(latestImage.captured_at)}</p>
+                <p className="mt-0.5">
+                  {latestImage.analysis?.status === "ok" && latestImage.analysis.label_text
+                    ? tm(latestImage.analysis.label_text)
+                    : t("chat.evidenceNoReview")}
+                  {latestImage.analysis?.confidence_pct != null
+                    ? ` · ${t("chat.evidenceConfidence", {
+                        value: formatNumber(latestImage.analysis.confidence_pct, 0),
+                      })}`
+                    : ""}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-1 text-2xs text-muted">{t("chat.evidenceNoImage")}</p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -480,6 +591,8 @@ export function RayyanChatPage() {
               </Link>
             </section>
           )}
+
+          {selectedFieldId !== null && <FieldEvidence fieldId={selectedFieldId} />}
 
           {turns.some((turn) => turn.response) && (
             <section className="card card-pad" aria-labelledby="rayyan-sources">

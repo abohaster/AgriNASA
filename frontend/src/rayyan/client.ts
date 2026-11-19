@@ -15,7 +15,7 @@ import type {
 } from "./types";
 
 /**
- * HTTP client for the RAYAN API.
+ * HTTP client for the Fale7 API.
  *
  * The settings token is the only credential this module ever holds and it lives
  * in a module variable (memory) only — never localStorage, sessionStorage or a
@@ -89,7 +89,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     response = await fetch(`${BASE}${path}`, { ...init, headers });
   } catch {
     throw new RayyanApiError(
-      "The RAYAN backend could not be reached. Check that it is running.",
+      "The Fale7 backend could not be reached. Check that it is running.",
       "NETWORK_ERROR",
     );
   }

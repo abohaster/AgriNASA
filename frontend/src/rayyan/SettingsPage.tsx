@@ -14,6 +14,7 @@ import {
   setSettingsToken,
   type RayyanErrorInfo,
 } from "./client";
+import { Fale7ApiSection } from "./Fale7ApiSection";
 import { RayyanShell } from "./RayyanShell";
 import { useRayyanT } from "./strings";
 import type { RayyanKey, RayyanKeyStatus, RayyanSettingsStatus } from "./types";
@@ -26,6 +27,68 @@ function statusTone(status: RayyanKeyStatus): "good" | "warn" | "bad" {
 function statusLabel(status: RayyanKeyStatus): "settings.statusValid" | "settings.statusQuota" | "settings.statusInvalid" {
   if (status === "valid") return "settings.statusValid";
   return status === "quota_limited" ? "settings.statusQuota" : "settings.statusInvalid";
+}
+
+type ConnectionState =
+  | { tone: "good" | "warn" | "bad"; label: string; detail: string | null }
+  | null;
+
+function ConnectionTest({ activeKey }: { activeKey: RayyanKey | null }) {
+  const { t } = useRayyanT();
+  const [state, setState] = useState<ConnectionState>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function test() {
+    if (!activeKey) return;
+    setBusy(true);
+    setState(null);
+    try {
+      const result = await rayyanApi.validateKey(activeKey.id);
+      if (result.valid) {
+        setState({ tone: "good", label: t("settings.testConnected"), detail: result.message });
+      } else if (result.status === "invalid") {
+        setState({ tone: "bad", label: t("settings.testInvalidKey"), detail: result.message });
+      } else if (result.status === "quota_limited") {
+        setState({ tone: "warn", label: t("settings.testRateLimited"), detail: result.message });
+      } else {
+        setState({ tone: "bad", label: t("settings.testDisconnected"), detail: result.message });
+      }
+    } catch (err) {
+      const info = describeError(err);
+      const label =
+        info.code === "GEMINI_QUOTA_EXCEEDED"
+          ? t("settings.testRateLimited")
+          : info.code === "GEMINI_KEY_INVALID"
+            ? t("settings.testInvalidKey")
+            : t("settings.testDisconnected");
+      setState({ tone: label === t("settings.testRateLimited") ? "warn" : "bad", label, detail: info.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-2xs text-muted">{t("settings.testHint")}</span>
+        <button
+          type="button"
+          className="btn-secondary btn-sm"
+          onClick={() => void test()}
+          disabled={busy || !activeKey}
+        >
+          <RefreshIcon size={13} />
+          {busy ? t("settings.testing") : t("settings.testConnection")}
+        </button>
+      </div>
+      {state && (
+        <p className="mt-2 flex items-center gap-2 text-2xs">
+          <StatusPill tone={state.tone}>{state.label}</StatusPill>
+          {state.detail && <span className="text-muted">{state.detail}</span>}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -472,6 +535,8 @@ function SettingsBody({ data, reload }: { data: RayyanSettingsStatus; reload: ()
               {tm(active.last_error_message)}
             </p>
           )}
+
+          <ConnectionTest activeKey={active} />
         </section>
 
         <InfoNote tone="info" title={t("settings.switchHint")}>
@@ -496,6 +561,10 @@ function SettingsBody({ data, reload }: { data: RayyanSettingsStatus; reload: ()
             </Link>
           </p>
         </section>
+      </div>
+
+      <div className="xl:col-span-2">
+        <Fale7ApiSection />
       </div>
     </div>
   );

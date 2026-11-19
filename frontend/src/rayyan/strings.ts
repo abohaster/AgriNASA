@@ -44,6 +44,16 @@ const STRINGS = {
   "settings.storage": ["Key storage", "مكان تخزين المفاتيح"],
   "settings.storageValue": ["Server-side encrypted table", "جدول مشفَّر على الخادم"],
   "settings.rateLimit": ["Questions per hour", "أسئلة في الساعة"],
+  "settings.testConnection": ["Test connection", "اختبار الاتصال"],
+  "settings.testing": ["Testing…", "جارٍ الاختبار…"],
+  "settings.testHint": [
+    "Checks the backend, the active key and model access. No AI answer is generated.",
+    "يتحقق من الخادم والمفتاح النشط والوصول إلى النموذج. لا يولّد إجابة.",
+  ],
+  "settings.testConnected": ["Connected", "متصل"],
+  "settings.testDisconnected": ["Disconnected", "غير متصل"],
+  "settings.testInvalidKey": ["Invalid key", "مفتاح غير صالح"],
+  "settings.testRateLimited": ["Rate limited", "بلغ حد الطلبات"],
 
   "settings.addTitle": ["Add Gemini API key", "إضافة مفتاح Gemini"],
   "settings.addDescription": [
@@ -77,7 +87,6 @@ const STRINGS = {
   "settings.statusInvalid": ["Invalid", "غير صالح"],
   "settings.statusQuota": ["Quota limited", "بلغ حد الحصة"],
   "settings.test": ["Test", "اختبار"],
-  "settings.testing": ["Testing…", "جارٍ الاختبار…"],
   "settings.activate": ["Activate", "تنشيط"],
   "settings.delete": ["Delete", "حذف"],
   "settings.confirmDelete": ["Confirm delete", "تأكيد الحذف"],
@@ -160,6 +169,33 @@ const STRINGS = {
     "اربط روبوت ESP32 بهذا الحقل لتظهر قراءات التربة والهواء والمسافة بجوار بيانات القمر الصناعي والنموذج.",
   ],
   "chat.openRobot": ["Open the robot page", "افتح صفحة الروبوت"],
+  "chat.evidenceTitle": ["Field evidence", "بيانات الحقل المتاحة"],
+  "chat.evidenceDescription": [
+    "The live readings Fale7 can use for this field. Robot readings are measured on site; the water requirement is a decision-support estimate.",
+    "القراءات الحية التي يستخدمها Fale7 لهذا الحقل. قراءات الروبوت مقيسة في الحقل، والاحتياج المائي تقدير لدعم القرار.",
+  ],
+  "chat.evidenceMeasured": ["Measured", "مقيس"],
+  "chat.evidenceEstimated": ["Estimated", "تقديري"],
+  "chat.evidenceRobot": ["Robot soil moisture", "رطوبة التربة من الروبوت"],
+  "chat.evidenceNoRobot": [
+    "Robot data unavailable — no fresh soil-moisture reading.",
+    "بيانات الروبوت غير متاحة — لا توجد قراءة حديثة لرطوبة التربة.",
+  ],
+  "chat.evidenceMeasuredAt": ["{value}% at {time} · sensor {sensor}", "{value}% في {time} · الحساس {sensor}"],
+  "chat.evidenceWater": ["Estimated water requirement", "الاحتياج المائي المقدَّر"],
+  "chat.evidenceWaterValue": ["≈ {value} mm gross", "≈ {value} مم إجمالي"],
+  "chat.evidenceNoWater": [
+    "Insufficient data to estimate water requirement.",
+    "بيانات غير كافية لتقدير الاحتياج المائي.",
+  ],
+  "chat.evidenceImage": ["Latest plant image", "أحدث صورة نباتية"],
+  "chat.evidenceNoImage": [
+    "No plant photo has been uploaded for this field yet.",
+    "لم تُرفع صورة نباتية لهذا الحقل بعد.",
+  ],
+  "chat.evidenceNoReview": ["Not analysed yet", "لم تُحلَّل بعد"],
+  "chat.evidenceConfidence": ["{value}% confidence", "ثقة {value}%"],
+  "chat.evidenceUnavailable": ["Field summary could not be loaded.", "تعذّر تحميل ملخص الحقل."],
   "chat.capabilitiesTitle": ["What Fale7 can use now", "ما يستطيع Fale7 استخدامه الآن"],
   "chat.capabilitiesDescription": [
     "Statuses reflect the live AgriNASA configuration and services, not an imagined feature list.",

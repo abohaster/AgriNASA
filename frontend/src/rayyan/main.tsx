@@ -13,7 +13,7 @@ import { RayyanChatPage } from "./ChatPage";
 import { RayyanSettingsPage } from "./SettingsPage";
 
 /**
- * Standalone RAYAN entry used until the navigation patch to `App.tsx` /
+ * Standalone Fale7 entry used until the navigation patch to `App.tsx` /
  * `SiteHeader.tsx` is approved. Everything it mounts is a new, isolated file.
  */
 createRoot(document.getElementById("root")!).render(
