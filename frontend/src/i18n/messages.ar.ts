@@ -1703,7 +1703,6 @@ export const AR_MESSAGES: Record<string, string> = {
   "Surface pressure": "الضغط السطحي",
   "Cloud cover": "الغطاء السحابي",
   "Soil moisture (0-7 cm, model)": "رطوبة التربة (0-7 سم، نموذج)",
-  "Soil temperature (6 cm, model)": "حرارة التربة (6 سم، نموذج)",
   "Reference ET₀ today": "ET₀ المرجعي اليوم",
   "Solar radiation today": "الإشعاع الشمسي اليوم",
   "ERA5-Land model value, not a probe.": "قيمة نموذج ERA5-Land وليست قراءة مسبار.",
@@ -2252,6 +2251,181 @@ export const AR_MESSAGES: Record<string, string> = {
   "How the key is stored": "كيف يُخزَّن المفتاح",
   "The server keeps only a hash and a short prefix of the device key. It cannot be shown again, and revoking the device stops its readings immediately.":
     "الخادم بيحفظ بصمة تجزئة وبداية قصيرة من مفتاح الجهاز بس. مش ممكن يظهر تاني، وإلغاء الجهاز بيوقف قراءاته فورًا.",
+
+  // ── Robot soil moisture, plant images and water requirement ──────────────
+  "Robot soil moisture": "رطوبة التربة من الروبوت",
+  "Measured by a field sensor at one point and depth. It is the primary irrigation signal; satellite and model moisture are never substituted for it.":
+    "قياس من حساس ميداني عند نقطة واحدة وعمق واحد. وهو الإشارة الأساسية للري، ولا يُستبدل أبدًا برطوبة من الأقمار الصناعية أو النماذج.",
+  "Measured · current": "مقيس · حديث",
+  "Measured · stale": "مقيس · قديم",
+  "Robot data unavailable": "بيانات الروبوت غير متاحة",
+  "Latest probe reading": "أحدث قراءة للمجس",
+  "Measured at": "وقت القياس",
+  "Sensor": "الحساس",
+  "Measurement status": "حالة القياس",
+  "Readings, last 24 h": "القراءات، آخر 24 ساعة",
+  "{count} sensor(s)": "{count} حساس",
+  "24 h mean / min / max": "متوسط / أدنى / أعلى 24 ساعة",
+  "Is moisture sufficient?": "هل الرطوبة كافية؟",
+  "Relative to the refill range between wilting point and field capacity for the field's soil texture.":
+    "مقارنةً بنطاق إعادة التعبئة بين نقطة الذبول والسعة الحقلية حسب قوام تربة الحقل.",
+  "Is irrigation needed?": "هل الري مطلوب؟",
+  "Irrigation needed": "الري مطلوب",
+  "No irrigation needed now": "لا حاجة للري الآن",
+  "Not enough data to decide": "لا توجد بيانات كافية للقرار",
+  "The probe is compared with the crop's refill threshold for its current growth stage.":
+    "تُقارن قراءة المجس بعتبة إعادة التعبئة للمحصول في مرحلته الحالية.",
+  "Estimated Water Requirement": "الاحتياج المائي المقدَّر",
+  "≈ {volume} m³ for {area} ha": "≈ {volume} م³ لمساحة {area} هكتار",
+  "{net} mm net at field capacity target": "{net} مم صافي للوصول إلى السعة الحقلية",
+  "Insufficient data to estimate water requirement": "بيانات غير كافية لتقدير الاحتياج المائي",
+  "Insufficient data to estimate water requirement.": "بيانات غير كافية لتقدير الاحتياج المائي.",
+  "Estimate · {level} confidence": "تقدير · ثقة {level}",
+  "No estimate": "لا يوجد تقدير",
+  "Assumptions behind this estimate": "الافتراضات خلف هذا التقدير",
+  "Soil moisture measured by the robot: {value}% at {time}":
+    "رطوبة التربة المقيسة بالروبوت: {value}% في {time}",
+  "Robot data unavailable: the last soil reading is old.":
+    "بيانات الروبوت غير متاحة: آخر قراءة للتربة قديمة.",
+  "Robot data unavailable: no current soil moisture reading.":
+    "بيانات الروبوت غير متاحة: لا توجد قراءة حالية لرطوبة التربة.",
+  "Estimated water requirement: {value} mm": "الاحتياج المائي المقدَّر: {value} مم",
+
+  "Send one reading per measurement. Any subset of the four sensor values is accepted; sensor_id, GPS and status are optional. measured_at defaults to the server time.":
+    "أرسل قراءة واحدة لكل قياس. يُقبل أي مزيج من قيم الحساسات الأربع، وsensor_id وGPS والحالة اختيارية. ويُستخدم وقت الخادم افتراضيًا لـ measured_at.",
+  "Status": "الحالة",
+  "GPS": "GPS",
+  "No stored robot readings exist for this field yet. Values are not simulated or filled in.":
+    "لا توجد قراءات روبوت محفوظة لهذا الحقل بعد. لا تُحاكى القيم ولا تُملأ.",
+  "Plant photo captured at {time}": "صورة نباتية التُقطت في {time}",
+  "{value}% confidence": "ثقة {value}%",
+  "No AI key was configured, so no label was invented.":
+    "لم يُعدّ مفتاح ذكاء اصطناعي، لذلك لم تُختلق أي تسمية.",
+  "Reviewing…": "جارٍ التحليل…",
+  "Run AI review": "تشغيل المراجعة بالذكاء الاصطناعي",
+  "Compared with the crop healthy reference": "مقارنةً بالمرجع الصحي للمحصول",
+  "No healthy reference available for this crop": "لا يوجد مرجع صحي متاح لهذا المحصول",
+  "Plant images could not be loaded.": "تعذّر تحميل صور النباتات.",
+  "The photo could not be uploaded.": "تعذّر رفع الصورة.",
+  "Give the healthy reference a label first.": "أضف اسمًا للمرجع الصحي أولاً.",
+  "The healthy reference could not be saved.": "تعذّر حفظ المرجع الصحي.",
+  "The AI review could not be run.": "تعذّر تشغيل المراجعة بالذكاء الاصطناعي.",
+  "Robot camera and plant health": "كاميرا الروبوت وصحة النبات",
+  "Robot Camera → Upload → Backend → AI vision review → Comparison with the crop healthy reference and the previous photo → stored result. The review is advisory and always shows a confidence value; it is not a confirmed diagnosis.":
+    "كاميرا الروبوت ← الرفع ← الخادم ← مراجعة الرؤية بالذكاء الاصطناعي ← المقارنة بالمرجع الصحي للمحصول وبالصورة السابقة ← النتيجة المحفوظة. المراجعة استشارية وتُظهر قيمة ثقة دائمًا، وليست تشخيصًا مؤكدًا.",
+  "Loading plant images…": "جارٍ تحميل صور النباتات…",
+  "Healthy reference for {crop}": "المرجع الصحي لمحصول {crop}",
+  "{count} reference image(s) stored on the server": "{count} صورة مرجعية محفوظة على الخادم",
+  "No healthy reference is stored for this crop yet. Without one, the review compares only with the previous photo.":
+    "لا يوجد مرجع صحي محفوظ لهذا المحصول بعد. وبدونه تقتصر المقارنة على الصورة السابقة.",
+  "Add a healthy reference image": "إضافة صورة مرجعية صحية",
+  "Reference label": "اسم المرجع",
+  "Saving…": "جارٍ الحفظ…",
+  "Choose image": "اختر صورة",
+  "Upload a plant photo": "رفع صورة نباتية",
+  "The file is sent to the backend and stored with its capture time, crop, stage and location. No image is generated or modified.":
+    "يُرسل الملف إلى الخادم ويُحفظ مع وقت التقاطه والمحصول والمرحلة والموقع. لا تُولَّد أي صورة أو تُعدَّل.",
+  "Growth stage": "مرحلة النمو",
+  "Not specified": "غير محددة",
+  "Optional note": "ملاحظة اختيارية",
+  "Uploading…": "جارٍ الرفع…",
+  "Upload and review": "رفع ومراجعة",
+  "No robot plant photos yet. Historical photos and their reviews will appear here.":
+    "لا توجد صور نباتية من الروبوت بعد. ستظهر هنا الصور السابقة ومراجعاتها.",
+  "Photo history and reviews": "سجل الصور والمراجعات",
+  "{count} image(s) · newest first": "{count} صورة · الأحدث أولاً",
+  "Loading…": "جارٍ التحميل…",
+
+  "Not analysed yet": "لم تُحلَّل بعد",
+  "AI review unavailable": "مراجعة الذكاء الاصطناعي غير متاحة",
+  "Healthy appearance": "مظهر صحي",
+  "Uncertain — additional inspection recommended": "غير مؤكد — يُنصح بفحص إضافي",
+  "Possible stress": "إجهاد محتمل",
+  "Possible nutrient-related issue": "مشكلة عناصر غذائية محتملة",
+  "Possible disease symptoms": "أعراض مرضية محتملة",
+  "Possible environmental stress": "إجهاد بيئي محتمل",
+  "Measured on site": "مقيس ميدانيًا",
+
+  "Measured and modelled data are labelled": "تُوسم البيانات المقيسة والمحسوبة",
+  "Most catalogue datasets are reanalysis, satellites, models or forecasts. Robot sensor and camera data are measured point observations from the AgriNASA robot and are labelled as measured; one probe point does not represent the whole field. When the robot is offline the app says the data is unavailable instead of filling the gap.":
+    "معظم مجموعات الكتالوج بيانات إعادة تحليل أو أقمار صناعية أو نماذج أو توقعات. بيانات حساسات وكاميرا الروبوت مقيسة ميدانيًا من روبوت AgriNASA وتُوسم كمقيسة؛ ونقطة مجس واحدة لا تمثّل الحقل كله. وعندما يكون الروبوت غير متصل تقول المنصة إن البيانات غير متاحة بدل ملء الفجوة.",
+
+  "Measured volumetric soil moisture at the robot's probe. A gap means the robot did not report; it is never filled with an estimate.":
+    "رطوبة تربة حجمية مقيسة عند مجس الروبوت. الفجوة تعني أن الروبوت لم يرسل قراءة، ولا تُملأ أبدًا بتقدير.",
+  "readings": "قراءات",
+  "reading": "قراءة",
+  "Germination": "الإنبات",
+  "Seedling": "الشتلة",
+  "Vegetative Growth": "النمو الخضري",
+  "Flowering": "الإزهار",
+  "Fruiting": "الإثمار",
+  "Maturity": "النضج",
+  "Harvest": "الحصاد",
+  "Soil moisture (%)": "رطوبة التربة (%)",
+  "Robot soil moisture history": "سجل رطوبة التربة من الروبوت",
+  "Readings stored exactly as the robot sent them, with their own timestamps, sensor ids and measurement status. When the robot is offline the platform reports that soil moisture is unavailable instead of inventing a value.":
+    "قراءات محفوظة كما أرسلها الروبوت تمامًا، مع أوقاتها ومعرّفات حساساتها وحالة القياس. وعندما يكون الروبوت غير متصل تعلن المنصة أن رطوبة التربة غير متاحة بدل اختلاق قيمة.",
+  "Loading robot soil-moisture readings…": "جارٍ تحميل قراءات رطوبة التربة من الروبوت…",
+  "Robot soil-moisture history could not be loaded": "تعذّر تحميل سجل رطوبة التربة من الروبوت",
+  "The robot history endpoint did not respond.": "لم تستجب خدمة سجل الروبوت.",
+  "Latest reading": "أحدث قراءة",
+  "% volumetric": "% حجمي",
+  "Readings in period": "القراءات في المدة",
+  "sensor": "حساس",
+  "sensors": "حساسات",
+  "Mean in period": "المتوسط في المدة",
+  "Range in period": "المدى في المدة",
+  "The robot has not reported fresh soil moisture for this field recently.":
+    "لم يرسل الروبوت قراءة حديثة لرطوبة التربة لهذا الحقل مؤخرًا.",
+  "No soil-moisture readings were recorded by the robot in the selected period.":
+    "لم يسجل الروبوت أي قراءات لرطوبة التربة في المدة المحددة.",
+  "No readings in this period": "لا توجد قراءات في هذه المدة",
+  "The robot's latest reading falls outside the selected period. Choose Today or a custom period that includes it.":
+    "أحدث قراءة للروبوت تقع خارج المدة المحددة. اختر «اليوم» أو فترة مخصصة تشملها.",
+  "Plant photo captured by the robot": "صورة نباتية التقطها الروبوت",
+  "Captured at": "وقت الالتقاط",
+  "confidence": "ثقة",
+  "Healthy reference": "المرجع الصحي",
+  "No healthy reference photo is stored for this crop yet, so the review can only describe the photo.":
+    "لا توجد صورة مرجعية صحية محفوظة لهذا المحصول بعد، لذا تقتصر المراجعة على وصف الصورة.",
+  "Healthy reference photo for this crop": "صورة مرجعية صحية لهذا المحصول",
+  "Added": "أُضيفت",
+  "Plant images and health comparison": "صور النباتات ومقارنة الصحة",
+  "The latest robot photo, the one before it, and the healthy reference for this crop. AI review labels stay cautious and always carry a confidence value; they are not a confirmed diagnosis.":
+    "أحدث صورة من الروبوت، والصورة التي قبلها، والمرجع الصحي لهذا المحصول. تبقى تسميات المراجعة الذكية حذرة وتحمل قيمة ثقة دائمًا، وليست تشخيصًا مؤكدًا.",
+  "Robot camera": "كاميرا الروبوت",
+  "Loading robot plant images…": "جارٍ تحميل صور النباتات من الروبوت…",
+  "Robot plant images could not be loaded": "تعذّر تحميل صور النباتات من الروبوت",
+  "The robot image endpoint did not respond.": "لم تستجب خدمة صور الروبوت.",
+  "No plant photos in this period": "لا توجد صور نباتية في هذه المدة",
+  "The robot did not upload a plant photo inside the selected period. Health comparison resumes when a new image arrives.":
+    "لم يرفع الروبوت صورة نباتية خلال المدة المحددة. وتستأنف مقارنة الصحة عند وصول صورة جديدة.",
+  "Current image": "الصورة الحالية",
+  "No photo was captured by the robot in this period.": "لم يلتقط الروبوت صورة في هذه المدة.",
+  "Previous image": "الصورة السابقة",
+  "There is no earlier photo to compare inside this period.":
+    "لا توجد صورة أقدم للمقارنة داخل هذه المدة.",
+
+  "No soil-moisture measurement has been uploaded for this field. Pair a robot and let it post readings.":
+    "لم تُرفع أي قراءة لرطوبة التربة لهذا الحقل. اربط روبوتًا ودعه يرسل القراءات.",
+  "Demo mode replays a cached weather snapshot; live robot readings are not mixed into demo results.":
+    "وضع العرض التجريبي يعيد تشغيل لقطة طقس محفوظة، ولا تُدمج قراءات الروبوت الحية في نتائج العرض.",
+  "Insufficient data to estimate water requirement. A current robot soil-moisture reading and/or a complete root-zone water balance is required.":
+    "بيانات غير كافية لتقدير الاحتياج المائي. يلزم وجود قراءة حديثة لرطوبة التربة من الروبوت و/أو موازنة كاملة لمنطقة الجذور.",
+  "Insufficient data to estimate water requirement for this analysis date.":
+    "بيانات غير كافية لتقدير الاحتياج المائي في تاريخ التحليل.",
+  "Measured by the field robot at one point and depth. It does not represent the whole field; several readings are summarised only when they exist.":
+    "قياس من روبوت الحقل عند نقطة واحدة وعمق واحد. لا يمثّل الحقل كله؛ وتُلخَّص عدة قراءات فقط عندما تكون موجودة.",
+  "Calculated from the current robot probe reading plus soil, rooting depth and area assumptions. The probe measures moisture; the volume is an estimate.":
+    "محسوب من قراءة مجس الروبوت الحالية مع افتراضات التربة وعمق الجذور والمساحة. يقيس المجس الرطوبة، أما الحجم فهو تقدير.",
+  "No current robot reading is available, so this estimate comes from the FAO-56 root-zone balance driven by coarse-grid weather.":
+    "لا تتوفر قراءة حالية من الروبوت، لذا يأتي هذا التقدير من موازنة منطقة الجذور وفق FAO-56 المبنية على طقس شبكة تقريبية.",
+  "A current robot reading and/or a complete water balance is required before a volume can be estimated.":
+    "يلزم وجود قراءة حالية من الروبوت و/أو موازنة مائية كاملة قبل تقدير الحجم.",
+  "No current robot soil moisture reading is available. The app does not replace it with a model or satellite estimate.":
+    "لا تتوفر قراءة حالية لرطوبة التربة من الروبوت. لا تستبدلها المنصة بتقدير من نموذج أو قمر صناعي.",
+  "Sufficient": "كافية",
+  "% vol": "% حجمي",
 };
 
 

@@ -165,6 +165,14 @@ const PATTERNS: ArabicPattern[] = [
     render: ([threshold]) => `أيام صقيع (Tmin ≤ ${threshold} °C)`,
   },
 
+  // ── Robot moisture availability ─────────────────────────────────────────
+  {
+    match:
+      /The robot has not reported soil moisture within the last (\d+) hours\. Last reading shown; it is not used for a current irrigation decision\./g,
+    render: ([hours]) =>
+      `لم يرسل الروبوت رطوبة التربة خلال آخر ${hours} ساعات. تُعرض آخر قراءة، ولا تُستخدم لقرار ري حالي.`,
+  },
+
   // ── Confidence reasons ──────────────────────────────────────────────────
   {
     match: /Only (\d+)% of days had complete ET₀ inputs; those gaps reduce certainty\./g,
