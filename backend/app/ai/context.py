@@ -94,6 +94,10 @@ def _irrigation_context(analysis: IrrigationAnalysis) -> dict[str, Any]:
         "crop_coefficient_kc": _round(analysis.kc, 3),
         "etc_mm_per_day": _round(analysis.etc_mm_day, 3),
         "root_zone": analysis.balance.model_dump(),
+        "robot_soil_moisture": analysis.robot_soil_moisture.model_dump(mode="json"),
+        "moisture_assessment": analysis.moisture_assessment,
+        "irrigation_needed": analysis.irrigation_needed,
+        "water_requirement": analysis.water_requirement.model_dump(mode="json"),
         "net_refill_requirement_mm": _round(analysis.net_requirement_mm),
         "gross_refill_requirement_mm": _round(analysis.gross_requirement_mm),
         "application_efficiency": analysis.application_efficiency,
@@ -146,6 +150,7 @@ def build_field_context(
     analysis_planting_date: date,
     environment_latitude: float | None = None,
     environment_longitude: float | None = None,
+    plant_images: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble the full, auditable context sent to the model."""
     irrigation_context = _irrigation_context(irrigation)
@@ -218,6 +223,11 @@ def build_field_context(
         "irrigation": irrigation_context,
         "crop_health": health_context,
         "vegetation": _vegetation_context(vegetation),
+        "plant_images": plant_images
+        or {
+            "available": False,
+            "reason": "No plant-image review was supplied for this question.",
+        },
         "limitations": limitations,
     }
     return context
