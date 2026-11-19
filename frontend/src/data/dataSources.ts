@@ -52,6 +52,8 @@ export const RELIABILITY_BY_SOURCE: Record<string, Reliability> = {
   "gee-landcover": "modeled",
   "gee-smap": "satellite",
   "gee-imerg": "satellite",
+  "robot-soil-moisture": "measured",
+  "robot-camera": "measured",
   "crop-reference": "modeled",
   "derived-suitability": "modeled",
   wapor: "modeled",
@@ -156,7 +158,6 @@ export const SOURCE_CONTENT: DataSourceContent[] = [
       "Surface pressure",
       "Cloud cover",
       "Soil moisture (0-7 cm, model)",
-      "Soil temperature (6 cm, model)",
       "Reference ET₀ today",
       "Solar radiation today",
     ],
@@ -174,7 +175,6 @@ export const SOURCE_CONTENT: DataSourceContent[] = [
       "Reference ET₀",
       "Relative humidity",
       "Soil moisture (0-7 cm, model)",
-      "Soil temperature (6 cm, model)",
       "Monthly and yearly summaries",
       "Historical comparisons",
     ],
@@ -246,6 +246,44 @@ export const SOURCE_CONTENT: DataSourceContent[] = [
     farmManager: "Cross-checks rainfall between seasons and areas where gauges are sparse.",
     agronomist:
       "IMERG monthly estimate at about 0.1°. A rain gauge remains the local reference.",
+  },
+  {
+    id: "robot-soil-moisture",
+    variables: [
+      "Soil moisture at the probe (% volumetric)",
+      "Reading timestamp",
+      "Sensor / device id",
+      "GPS position and status",
+      "24-hour history",
+    ],
+    coverage: "Field-level sensor data collected directly by the AgriNASA robot · only when the robot is paired and online",
+    whatItIs:
+      "Field-level sensor/camera data collected directly by the AgriNASA robot. The probe measures soil moisture at one point and depth; it is not a whole-field average.",
+    simpleFarmer:
+      "The robot puts a moisture sensor in your soil and tells you how wet it is right now, and when it was measured.",
+    farmManager:
+      "A measured point reading for irrigation timing, clearly separated from the weather model. When the robot is offline the app says the data is unavailable.",
+    agronomist:
+      "Measured volumetric water content at the sensor location and depth, with timestamp, sensor id, GPS and status. Spatial variability is not measured; modelled or satellite moisture is never substituted.",
+  },
+  {
+    id: "robot-camera",
+    variables: [
+      "Plant photo",
+      "Capture timestamp and GPS",
+      "AI visual review label and confidence",
+      "Healthy-reference comparison",
+      "Historical photo comparison",
+    ],
+    coverage: "Field-level camera data collected directly by the AgriNASA robot · only when the robot is paired and online",
+    whatItIs:
+      "Field-level sensor/camera data collected directly by the AgriNASA robot. The photo is a real observation; the AI review is an advisory visual assessment, not a diagnosis.",
+    simpleFarmer:
+      "The robot takes a photo of the plants and gives a cautious description, with a confidence value and what to inspect next.",
+    farmManager:
+      "Adds visual evidence to the field record and compares it with the crop's healthy reference and previous photos.",
+    agronomist:
+      "A real plant image with capture metadata. The AI vision output is a cautious label plus confidence and limitations; it never confirms a disease or returns 100%.",
   },
   {
     id: "crop-reference",
