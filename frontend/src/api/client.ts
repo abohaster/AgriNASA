@@ -17,9 +17,12 @@ import type {
   FarmerSummaryRequest,
   Field,
   FieldCreate,
+  FieldImages,
+  FieldMoisture,
   FieldSensors,
   FieldUpdate,
   GeocodeResult,
+  HealthyReference,
   HealthCheck,
   HistoryResponse,
   IrrigationAnalysis,
@@ -29,6 +32,7 @@ import type {
   PairingCodeInfo,
   ReverseGeocodeResult,
   RobotDevice,
+  RobotImage,
   SatelliteAnalysis,
   SatelliteFieldOptions,
   SatelliteRequestPayload,
@@ -353,4 +357,76 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(reading),
     }),
+
+  fieldMoisture: (
+    fieldId: number,
+    params: { start?: string; end?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.start) qs.set("start", params.start);
+    if (params.end) qs.set("end", params.end);
+    if (params.limit) qs.set("limit", String(params.limit));
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return request<FieldMoisture>(`/robot/fields/${fieldId}/moisture${suffix}`, { signal });
+  },
+
+  fieldImages: (
+    fieldId: number,
+    opts: { start?: string; end?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ) => {
+    const qs = new URLSearchParams();
+    if (opts.start) qs.set("start", opts.start);
+    if (opts.end) qs.set("end", opts.end);
+    if (opts.limit) qs.set("limit", String(opts.limit));
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return request<FieldImages>(`/robot/fields/${fieldId}/images${suffix}`, { signal });
+  },
+
+  uploadRobotImage: (
+    fieldId: number,
+    payload: {
+      image_base64: string;
+      content_type: string;
+      captured_at?: string;
+      growth_stage?: string;
+      camera_id?: string;
+      latitude?: number;
+      longitude?: number;
+      note?: string;
+    },
+    analyze = true,
+  ) =>
+    request<RobotImage>(`/robot/fields/${fieldId}/images?analyze=${analyze}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  analyzeRobotImage: (imageId: number, force = false) =>
+    request<RobotImage>(`/robot/images/${imageId}/analyze?force=${force}`, { method: "POST" }),
+
+  listReferences: (cropId?: string, signal?: AbortSignal) =>
+    request<HealthyReference[]>(
+      `/robot/references${cropId ? `?crop_id=${encodeURIComponent(cropId)}` : ""}`,
+      { signal },
+    ),
+
+  uploadReference: (payload: {
+    crop_id: string;
+    label: string;
+    image_base64: string;
+    content_type: string;
+    source_note?: string;
+  }) =>
+    request<HealthyReference>("/robot/references", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  deleteReference: (referenceId: number) =>
+    request<void>(`/robot/references/${referenceId}`, { method: "DELETE" }),
+
+  plantStages: (signal?: AbortSignal) =>
+    request<{ stages: string[] }>("/robot/plant-stages", { signal }),
 };

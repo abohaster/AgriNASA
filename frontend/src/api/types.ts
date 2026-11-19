@@ -16,6 +16,7 @@ export type DataNature =
   | "estimated"
   | "derived"
   | "calculated"
+  | "measured"
   | "optional";
 
 export interface DataSourceRef {
@@ -199,6 +200,40 @@ export interface Driver {
   interpretation: string;
 }
 
+export type RobotMoistureStatus = "fresh" | "stale" | "unavailable";
+export type MoistureAssessment = "sufficient" | "marginal" | "low" | "unknown";
+
+export interface RobotSoilMoisture {
+  status: RobotMoistureStatus;
+  latest_pct: number | null;
+  measured_at: string | null;
+  sensor_id: string | null;
+  device_label: string | null;
+  measurement_status: string | null;
+  reading_count_24h: number;
+  sensor_count: number;
+  mean_pct_24h: number | null;
+  min_pct_24h: number | null;
+  max_pct_24h: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  reason: string | null;
+  note: string;
+}
+
+export interface WaterRequirement {
+  status: "estimated" | "insufficient_data";
+  label: string;
+  method: "robot_soil_moisture" | "root_zone_balance" | "none";
+  net_mm: number | null;
+  gross_mm: number | null;
+  volume_m3: number | null;
+  area_ha: number | null;
+  assumptions: string[];
+  reason: string | null;
+  confidence: "low" | "medium" | "high";
+}
+
 export interface IrrigationAnalysis {
   status: "ok" | "insufficient_data";
   /** True when the crop season has ended; no demand class is assessed. */
@@ -218,6 +253,10 @@ export interface IrrigationAnalysis {
   net_requirement_mm: number | null;
   gross_requirement_mm: number | null;
   application_efficiency: number | null;
+  robot_soil_moisture: RobotSoilMoisture;
+  moisture_assessment: MoistureAssessment;
+  irrigation_needed: boolean | null;
+  water_requirement: WaterRequirement;
   drivers: Driver[];
   missing_inputs: string[];
   limitations: string[];
@@ -740,7 +779,6 @@ export interface DailyClimatePoint {
   et0_mm: number | null;
   humidity_pct?: number | null;
   soil_moisture_0_7cm_pct?: number | null;
-  soil_temperature_0_7cm_c?: number | null;
 }
 
 export interface CurrentWeatherBlock {
@@ -1050,6 +1088,96 @@ export interface SensorReading {
   distance_cm: number | null;
   measured_at: string;
   received_at: string;
+  sensor_id?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  status?: "ok" | "degraded" | "error";
+}
+
+export type ReviewLabel =
+  | "healthy_appearance"
+  | "possible_stress"
+  | "possible_nutrient_issue"
+  | "possible_disease_symptoms"
+  | "possible_environmental_stress"
+  | "uncertain";
+
+export interface PlantImageAnalysis {
+  id: number;
+  status: "ok" | "unavailable";
+  label: ReviewLabel | null;
+  label_text: string | null;
+  confidence_pct: number | null;
+  summary: string | null;
+  observations: string[];
+  comparison: Record<string, unknown>;
+  limitations: string[];
+  provider: string | null;
+  model: string | null;
+  created_at: string;
+}
+
+export interface RobotImage {
+  id: number;
+  field_id: number;
+  crop_id: string;
+  growth_stage: string | null;
+  captured_at: string;
+  received_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  camera_id: string | null;
+  note: string | null;
+  content_type: string;
+  size_bytes: number;
+  file_url: string;
+  analysis: PlantImageAnalysis | null;
+}
+
+export interface HealthyReference {
+  id: number;
+  crop_id: string;
+  label: string;
+  content_type: string;
+  size_bytes: number;
+  source_note: string | null;
+  created_at: string;
+  file_url: string;
+}
+
+export interface FieldImages {
+  field_id: number;
+  crop_id: string;
+  images: RobotImage[];
+  references: HealthyReference[];
+  healthy_reference_available: boolean;
+}
+
+export interface MoisturePoint {
+  id: number;
+  soil_moisture_pct: number;
+  measured_at: string;
+  sensor_id: string | null;
+  sensor_label: string;
+  status: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface FieldMoisture {
+  field_id: number;
+  status: "fresh" | "stale" | "unavailable";
+  latest_pct: number | null;
+  latest_measured_at: string | null;
+  latest_sensor_id: string | null;
+  measurement_status: string | null;
+  reading_count: number;
+  sensor_count: number;
+  mean_pct: number | null;
+  min_pct: number | null;
+  max_pct: number | null;
+  reason: string | null;
+  points: MoisturePoint[];
 }
 
 export interface FieldSensors {
