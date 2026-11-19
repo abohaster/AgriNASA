@@ -18,6 +18,7 @@ import { ChartCard } from "../components/ui/ChartCard";
 import { ConfidenceBadge } from "../components/ui/ConfidenceBadge";
 import { DataSourceBadge } from "../components/ui/DataSourceBadge";
 import { Formula } from "../components/ui/Formula";
+import { SoilIcon } from "../components/ui/Icons";
 import { InfoNote } from "../components/ui/InfoNote";
 import { SectionHeading } from "../components/ui/SectionHeading";
 import { StatusPill } from "../components/ui/StatusPill";
@@ -26,9 +27,225 @@ import { useTheme } from "../context/ThemeContext";
 import { useAsync } from "../hooks/useAsync";
 import { useFieldIdFromRoute } from "../hooks/useField";
 import { useI18n } from "../i18n/I18nContext";
-import { formatDate, formatDateShort, formatNumber } from "../lib/format";
+import { formatDate, formatDateShort, formatDateTime, formatNumber } from "../lib/format";
 import { DEMAND_META } from "../lib/labels";
 import { FieldLayout } from "../components/layout/FieldLayout";
+
+function moistureLabelKey(assessment: IrrigationAnalysis["moisture_assessment"]) {
+  if (assessment === "sufficient") return "Sufficient";
+  if (assessment === "marginal") return "Marginal";
+  if (assessment === "low") return "Low";
+  return "Unknown";
+}
+
+function RobotMoisturePanel({ analysis }: { analysis: IrrigationAnalysis }) {
+  const { t } = useI18n();
+  const robot = analysis.robot_soil_moisture;
+  const fresh = robot.status === "fresh";
+  const assessmentTone =
+    analysis.moisture_assessment === "sufficient"
+      ? "good"
+      : analysis.moisture_assessment === "marginal"
+        ? "warn"
+        : analysis.moisture_assessment === "low"
+          ? "bad"
+          : "neutral";
+
+  return (
+    <section className="card card-pad" aria-label={t("Robot soil moisture")}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-md bg-sage-100 text-forest-700">
+            <SoilIcon size={18} />
+          </span>
+          <div>
+            <h2 className="text-sm font-semibold">{t("Robot soil moisture")}</h2>
+            <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted">
+              {t(
+                "Measured by a field sensor at one point and depth. It is the primary irrigation signal; satellite and model moisture are never substituted for it.",
+              )}
+            </p>
+          </div>
+        </div>
+        <StatusPill tone={fresh ? "good" : robot.status === "stale" ? "warn" : "neutral"}>
+          {fresh
+            ? t("Measured · current")
+            : robot.status === "stale"
+              ? t("Measured · stale")
+              : t("Robot data unavailable")}
+        </StatusPill>
+      </div>
+
+      {fresh ? (
+        <>
+          <div className="mt-4 rounded-md border border-forest-200 bg-forest-50 p-4">
+            <p className="eyebrow text-forest-700">{t("Latest probe reading")}</p>
+            <p className="mono-data mt-1 text-3xl font-semibold text-forest-900">
+              {formatNumber(robot.latest_pct, 1)}
+              <span className="ms-2 text-base font-normal text-forest-700">{t("% vol")}</span>
+            </p>
+            <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-2xs sm:grid-cols-2">
+              <div className="flex items-center justify-between gap-2 border-b border-forest-200/70 py-1.5">
+                <dt className="text-forest-700">{t("Measured at")}</dt>
+                <dd className="text-forest-900">{formatDateTime(robot.measured_at)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-b border-forest-200/70 py-1.5">
+                <dt className="text-forest-700">{t("Sensor")}</dt>
+                <dd className="font-mono text-forest-900" dir="ltr">
+                  {robot.sensor_id ?? "—"}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-b border-forest-200/70 py-1.5">
+                <dt className="text-forest-700">{t("Measurement status")}</dt>
+                <dd className="text-forest-900">{robot.measurement_status ?? "—"}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-b border-forest-200/70 py-1.5">
+                <dt className="text-forest-700">{t("Readings, last 24 h")}</dt>
+                <dd className="text-forest-900">
+                  {robot.reading_count_24h} · {t("{count} sensor(s)", { count: robot.sensor_count })}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-b border-forest-200/70 py-1.5">
+                <dt className="text-forest-700">{t("24 h mean / min / max")}</dt>
+                <dd className="text-forest-900">
+                  {formatNumber(robot.mean_pct_24h, 1)} / {formatNumber(robot.min_pct_24h, 1)} /{" "}
+                  {formatNumber(robot.max_pct_24h, 1)}%
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-b border-forest-200/70 py-1.5">
+                <dt className="text-forest-700">{t("Location")}</dt>
+                <dd className="font-mono text-forest-900" dir="ltr">
+                  {robot.latitude !== null && robot.longitude !== null
+                    ? `${robot.latitude.toFixed(4)}, ${robot.longitude.toFixed(4)}`
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-2xs leading-relaxed text-forest-800/80">{t(robot.note)}</p>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-md border border-line bg-card p-3">
+              <p className="field-label">{t("Is moisture sufficient?")}</p>
+              <StatusPill tone={assessmentTone}>{t(moistureLabelKey(analysis.moisture_assessment))}</StatusPill>
+              <p className="mt-2 text-2xs leading-relaxed text-muted">
+                {t(
+                  "Relative to the refill range between wilting point and field capacity for the field's soil texture.",
+                )}
+              </p>
+            </div>
+            <div className="rounded-md border border-line bg-card p-3">
+              <p className="field-label">{t("Is irrigation needed?")}</p>
+              <StatusPill
+                tone={
+                  analysis.irrigation_needed === true
+                    ? "bad"
+                    : analysis.irrigation_needed === false
+                      ? "good"
+                      : "neutral"
+                }
+              >
+                {analysis.irrigation_needed === true
+                  ? t("Irrigation needed")
+                  : analysis.irrigation_needed === false
+                    ? t("No irrigation needed now")
+                    : t("Not enough data to decide")}
+              </StatusPill>
+              <p className="mt-2 text-2xs leading-relaxed text-muted">
+                {t(
+                  "The probe is compared with the crop's refill threshold for its current growth stage.",
+                )}
+              </p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <InfoNote tone="warn" title={t("Robot data unavailable")} className="mt-4">
+          {t(
+            robot.reason ??
+              "No current robot soil moisture reading is available. The app does not replace it with a model or satellite estimate.",
+          )}
+        </InfoNote>
+      )}
+    </section>
+  );
+}
+
+function WaterRequirementPanel({ analysis }: { analysis: IrrigationAnalysis }) {
+  const { t } = useI18n();
+  const requirement = analysis.water_requirement;
+  const estimated = requirement.status === "estimated";
+
+  return (
+    <section
+      className={`card p-5 ${estimated ? "border-forest-200 bg-forest-50" : "border-clay-200"}`}
+      aria-label={t("Estimated Water Requirement")}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="eyebrow text-forest-700">{t("Estimated Water Requirement")}</p>
+          {estimated ? (
+            <>
+              <p className="mono-data mt-1 text-3xl font-semibold text-forest-900">
+                {formatNumber(requirement.gross_mm ?? requirement.net_mm, 1)} mm
+                <span className="ms-2 text-base font-normal text-forest-700">
+                  {requirement.gross_mm !== null ? t("gross") : t("net")}
+                </span>
+              </p>
+              {requirement.volume_m3 !== null && (
+                <p className="mt-1 text-sm text-forest-800">
+                  {t("≈ {volume} m³ for {area} ha", {
+                    volume: formatNumber(requirement.volume_m3, 0),
+                    area: formatNumber(requirement.area_ha, 2),
+                  })}
+                </p>
+              )}
+              {requirement.gross_mm !== null && requirement.net_mm !== null && (
+                <p className="mt-1 text-xs text-forest-800/80">
+                  {t("{net} mm net at field capacity target", {
+                    net: formatNumber(requirement.net_mm, 1),
+                  })}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="mt-1 text-lg font-semibold text-clay-700">
+              {t("Insufficient data to estimate water requirement")}
+            </p>
+          )}
+          <p className="mt-2 max-w-xl text-xs leading-relaxed text-forest-800/80">
+            {t(
+              estimated
+                ? requirement.method === "robot_soil_moisture"
+                  ? "Calculated from the current robot probe reading plus soil, rooting depth and area assumptions. The probe measures moisture; the volume is an estimate."
+                  : "No current robot reading is available, so this estimate comes from the FAO-56 root-zone balance driven by coarse-grid weather."
+                : requirement.reason ??
+                  "A current robot reading and/or a complete water balance is required before a volume can be estimated.",
+            )}
+          </p>
+        </div>
+        <StatusPill tone={estimated ? "good" : "warn"}>
+          {estimated ? t("Estimate · {level} confidence", { level: t(requirement.confidence) }) : t("No estimate")}
+        </StatusPill>
+      </div>
+
+      {estimated && requirement.assumptions.length > 0 && (
+        <details className="mt-4 border-t border-forest-200 pt-3">
+          <summary className="cursor-pointer text-xs font-semibold text-forest-700 hover:underline">
+            {t("Assumptions behind this estimate")}
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {requirement.assumptions.map((assumption) => (
+              <li key={assumption} className="text-2xs leading-relaxed text-forest-800/85">
+                • {t(assumption)}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+  );
+}
 
 function BalanceChart({ analysis }: { analysis: IrrigationAnalysis }) {
   const { chart } = useTheme();
@@ -267,32 +484,10 @@ function IrrigationBody({ fieldId }: { fieldId: number }) {
         </div>
       </section>
 
-      {!insufficient && analysis.net_requirement_mm !== null && (
-        <section className="card border-forest-200 bg-forest-50 p-5" aria-label={t("Refill requirement")}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="eyebrow text-forest-700">{t("Root-zone refill estimate")}</p>
-              <p className="mono-data mt-1 text-3xl font-semibold text-forest-900">
-                {formatNumber(analysis.net_requirement_mm, 1)} mm
-                <span className="ms-2 text-base font-normal text-forest-700">{t("net")}</span>
-              </p>
-              {analysis.gross_requirement_mm !== null && analysis.application_efficiency !== null && (
-                <p className="mt-1 text-sm text-forest-800">
-                  {t("{value} mm gross at {percent}% application efficiency", {
-                    value: formatNumber(analysis.gross_requirement_mm, 1),
-                    percent: formatNumber(analysis.application_efficiency * 100, 0),
-                  })}
-                </p>
-              )}
-            </div>
-            <p className="max-w-md text-xs leading-relaxed text-forest-800/80">
-              {t(
-                "Refill needed to return the assumed root zone toward field capacity. The baseline assumes no recorded irrigation events (I = 0); this is not a schedule or a measured application.",
-              )}
-            </p>
-          </div>
-        </section>
-      )}
+      <div className="grid gap-5 xl:grid-cols-2">
+        <RobotMoisturePanel analysis={analysis} />
+        <WaterRequirementPanel analysis={analysis} />
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 space-y-5">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   CartesianGrid,
@@ -13,10 +13,12 @@ import { api } from "../api/client";
 import type {
   DeviceToken,
   Field,
+  FieldImages,
   FieldSensors,
+  PlantImageAnalysis,
   RobotDevice,
+  RobotImage,
   SatelliteAnalysis,
-  SensorReading,
 } from "../api/types";
 import { FieldLayout } from "../components/layout/FieldLayout";
 import { ChartCard } from "../components/ui/ChartCard";
@@ -27,6 +29,7 @@ import {
   DatabaseIcon,
   DropIcon,
   HumidityIcon,
+  LeafIcon,
   RefreshIcon,
   SatelliteIcon,
   ThermometerIcon,
@@ -37,44 +40,22 @@ import { useDataMode } from "../context/DataModeContext";
 import { useTheme } from "../context/ThemeContext";
 import { useAsync } from "../hooks/useAsync";
 import { useI18n } from "../i18n/I18nContext";
-import { formatDateTime, formatNumber, parseIsoDate } from "../lib/format";
+import { formatDateTime, formatNumber, titleCase } from "../lib/format";
 import { DeviceKeyReveal } from "../components/robot/DeviceKeyReveal";
 import { RobotPairPanel } from "../components/robot/RobotPairPanel";
 
 const POLL_MS = 5000;
-const PREVIEW_MS = 3000;
-const PREVIEW_LIMIT = 40;
-
-/** Local test pattern for the panel preview. Never sent to the server. */
-function previewReading(step: number): SensorReading {
-  const wave = Math.sin(step / 2.2);
-  const drift = Math.cos(step / 3.6);
-  const soil = 31 - wave * 8 + drift * 2;
-  const temp = 27.5 + wave * 3.5;
-  const humidity = 55 - wave * 9 + drift * 3;
-  const distance = 58 + wave * 14;
-  return {
-    id: -step,
-    device_id: 0,
-    field_id: 0,
-    soil_moisture_pct: Number(soil.toFixed(1)),
-    air_temp_c: Number(temp.toFixed(1)),
-    humidity_pct: Number(humidity.toFixed(1)),
-    distance_cm: Number(distance.toFixed(1)),
-    measured_at: new Date().toISOString(),
-    received_at: new Date().toISOString(),
-  };
-}
 
 function minutesSince(iso: string): number {
-  const then = parseIsoDate(iso);
-  return Math.max(0, (Date.now() - then.getTime()) / 60000);
+  const then = new Date(iso);
+  return (Date.now() - then.getTime()) / 60000;
 }
 
 function Freshness({ measuredAt }: { measuredAt: string | null }) {
   const { t } = useI18n();
   if (!measuredAt) return null;
-  const minutes = minutesSince(measuredAt);
+  const minutes = Math.max(0, minutesSince(measuredAt));
+  if (!Number.isFinite(minutes)) return null;
   let tone: Tone = "good";
   let label: string;
   if (minutes < 10) {
@@ -102,14 +83,12 @@ function SensorTile({
   value,
   unit,
   hint,
-  simulated,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
   unit: string | null;
   hint: string;
-  simulated: boolean;
 }) {
   const { t } = useI18n();
   return (
@@ -123,11 +102,6 @@ function SensorTile({
         {unit && <span className="text-xs text-muted">{unit}</span>}
       </p>
       <p className="mt-1 text-2xs leading-relaxed text-muted">{t(hint)}</p>
-      {simulated && (
-        <p className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.08em] text-clay-600">
-          {t("Test pattern")}
-        </p>
-      )}
     </div>
   );
 }
@@ -227,13 +201,17 @@ function PairingSidebar({ field, onDeviceChange }: { field: Field; onDeviceChang
               <br />
               {` "humidity_pct": 54.0, "distance_cm": 62.0,`}
               <br />
+              {` "sensor_id": "soil-1", "latitude": 26.152,`}
+              <br />
+              {` "longitude": 32.723, "status": "ok",`}
+              <br />
               {` "measured_at": "2026-11-18T09:30:00Z"}`}
             </dd>
           </div>
         </dl>
         <p className="mt-2 text-2xs leading-relaxed text-muted">
           {t(
-            "Send one reading per measurement. Any subset of the four values is accepted; measured_at defaults to the server time.",
+            "Send one reading per measurement. Any subset of the four sensor values is accepted; sensor_id, GPS and status are optional. measured_at defaults to the server time.",
           )}
         </p>
       </section>
@@ -351,9 +329,6 @@ function LiveFeed({
   const [feedError, setFeedError] = useState<string | null>(null);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [listening, setListening] = useState(false);
-  const [preview, setPreview] = useState(false);
-  const [previewReadings, setPreviewReadings] = useState<SensorReading[]>([]);
-  const previewStep = useRef(0);
   const activeDevices = devices.filter((device) => device.active);
 
   const loadFeed = useCallback(async () => {
@@ -379,28 +354,15 @@ function LiveFeed({
     return () => window.clearInterval(timer);
   }, [listening, loadFeed]);
 
-  useEffect(() => {
-    if (!preview) return;
-    const generate = () => {
-      previewStep.current += 1;
-      const reading = previewReading(previewStep.current);
-      setPreviewReadings((current) => [...current, reading].slice(-PREVIEW_LIMIT));
-    };
-    generate();
-    const timer = window.setInterval(generate, PREVIEW_MS);
-    return () => window.clearInterval(timer);
-  }, [preview]);
-
   // Stop listening if every paired device was revoked while connected.
   useEffect(() => {
     if (listening && activeDevices.length === 0) setListening(false);
   }, [activeDevices.length, listening]);
 
-  const latest = preview ? previewReadings[previewReadings.length - 1] ?? null : feed?.latest ?? null;
-  const seriesSource = preview ? previewReadings : feed?.readings ?? [];
+  const latest = feed?.latest ?? null;
   const series = useMemo(
     () =>
-      seriesSource
+      (feed?.readings ?? [])
         .slice()
         .reverse()
         .map((reading) => ({
@@ -413,7 +375,7 @@ function LiveFeed({
           humidity: reading.humidity_pct,
           distance: reading.distance_cm,
         })),
-    [seriesSource],
+    [feed],
   );
 
   const tooltipProps = {
@@ -461,12 +423,7 @@ function LiveFeed({
             {listening ? t("Listening every 5 s") : t("Not connected")}
           </StatusPill>
           <Freshness measuredAt={latest?.measured_at ?? null} />
-          {preview && (
-            <StatusPill tone="warn" dot={false}>
-              {t("Test pattern · not a measurement")}
-            </StatusPill>
-          )}
-          {activeDevices.length === 0 && !preview && (
+          {activeDevices.length === 0 && (
             <span className="text-2xs text-muted">{t("Pair a robot to start listening.")}</span>
           )}
         </div>
@@ -485,7 +442,6 @@ function LiveFeed({
             value={latest?.soil_moisture_pct != null ? formatNumber(latest.soil_moisture_pct, 1) : "—"}
             unit="%"
             hint="Volumetric-water-style index from the probe"
-            simulated={preview}
           />
           <SensorTile
             icon={<ThermometerIcon size={14} />}
@@ -493,7 +449,6 @@ function LiveFeed({
             value={latest?.air_temp_c != null ? formatNumber(latest.air_temp_c, 1) : "—"}
             unit="°C"
             hint="DHT22 in the canopy layer"
-            simulated={preview}
           />
           <SensorTile
             icon={<HumidityIcon size={14} />}
@@ -501,7 +456,6 @@ function LiveFeed({
             value={latest?.humidity_pct != null ? formatNumber(latest.humidity_pct, 1) : "—"}
             unit="%"
             hint="DHT22 in the canopy layer"
-            simulated={preview}
           />
           <SensorTile
             icon={<SatelliteIcon size={14} />}
@@ -509,34 +463,49 @@ function LiveFeed({
             value={latest?.distance_cm != null ? formatNumber(latest.distance_cm, 0) : "—"}
             unit="cm"
             hint="HC-SR04, sensor to the crop surface"
-            simulated={preview}
           />
         </div>
 
-        {!preview && !listening && activeDevices.length > 0 && (
+        {latest ? (
+          <dl className="mt-3 grid gap-x-6 gap-y-1.5 rounded-md border border-line bg-sage-50/60 p-3 text-2xs sm:grid-cols-2">
+            <div className="flex items-center justify-between gap-2 border-b border-line/70 py-1.5">
+              <dt className="text-muted">{t("Measured at")}</dt>
+              <dd className="text-ink">{formatDateTime(latest.measured_at)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-2 border-b border-line/70 py-1.5">
+              <dt className="text-muted">{t("Sensor")}</dt>
+              <dd className="font-mono text-ink" dir="ltr">
+                {latest.sensor_id ?? "—"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-2 border-b border-line/70 py-1.5">
+              <dt className="text-muted">{t("Status")}</dt>
+              <dd className="text-ink">{latest.status ?? "ok"}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-2 border-b border-line/70 py-1.5">
+              <dt className="text-muted">{t("GPS")}</dt>
+              <dd className="font-mono text-ink" dir="ltr">
+                {latest.latitude != null && latest.longitude != null
+                  ? `${latest.latitude.toFixed(4)}, ${latest.longitude.toFixed(4)}`
+                  : "—"}
+              </dd>
+            </div>
+          </dl>
+        ) : (
+          <InfoNote tone="warn" title={t("Robot data unavailable")} className="mt-3">
+            {t(
+              "No stored robot readings exist for this field yet. Values are not simulated or filled in.",
+            )}
+          </InfoNote>
+        )}
+
+        {!listening && activeDevices.length > 0 && (
           <p className="mt-3 text-2xs leading-relaxed text-muted">
             {t(
               "Press Connect to poll the stored readings. The panel refreshes every 5 seconds while the robot keeps posting.",
             )}
           </p>
         )}
-
-        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-3">
-          <button
-            type="button"
-            className="btn-ghost btn-sm"
-            onClick={() => {
-              setPreview((value) => !value);
-              setPreviewReadings([]);
-              previewStep.current = 0;
-            }}
-          >
-            {preview ? t("Hide test pattern") : t("Preview the panel with a local test pattern")}
-          </button>
-          <span className="text-2xs leading-relaxed text-muted">
-            {t("The test pattern is generated in this browser and is never saved.")}
-          </span>
-        </div>
 
         {series.length >= 2 && (
           <div className="mt-4 grid gap-4 xl:grid-cols-2">
@@ -545,7 +514,6 @@ function LiveFeed({
               description="Each point is one reading stored by the backend."
               height={200}
               source={t("Field robot · probe at the sensor depth")}
-              footnote={preview ? t("Test pattern · not a measurement") : undefined}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={series} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
@@ -562,7 +530,6 @@ function LiveFeed({
               description="Temperature and relative humidity from the DHT22."
               height={200}
               source={t("Field robot · canopy air")}
-              footnote={preview ? t("Test pattern · not a measurement") : undefined}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={series} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
@@ -603,6 +570,382 @@ function LiveFeed({
           <DeviceList devices={devices} reload={reloadDevices} />
         </div>
       </footer>
+    </section>
+  );
+}
+
+const PLANT_STAGES = [
+  "germination",
+  "seedling",
+  "vegetative_growth",
+  "flowering",
+  "fruiting",
+  "maturity",
+  "harvest",
+];
+
+async function fileToBase64(file: File): Promise<string> {
+  const data = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("The file could not be read."));
+    reader.readAsDataURL(file);
+  });
+  const comma = data.indexOf(",");
+  return comma >= 0 ? data.slice(comma + 1) : data;
+}
+
+function analysisLabel(analysis: PlantImageAnalysis | null): string {
+  if (!analysis) return "Not analysed yet";
+  if (analysis.status === "unavailable") return "AI review unavailable";
+  return analysis.label_text ?? "Uncertain — additional inspection recommended";
+}
+
+function RobotImageCard({
+  image,
+  onAnalyze,
+  busy,
+}: {
+  image: RobotImage;
+  onAnalyze: (id: number) => void;
+  busy: boolean;
+}) {
+  const { t } = useI18n();
+  const analysis = image.analysis;
+  const differences = Array.isArray(analysis?.comparison?.visual_differences)
+    ? (analysis?.comparison?.visual_differences as string[])
+    : [];
+
+  return (
+    <article className="rounded-md border border-line bg-card p-3">
+      <div className="flex gap-3">
+        <a
+          href={image.file_url}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="block h-24 w-24 shrink-0 overflow-hidden rounded-md border border-line bg-sage-50"
+        >
+          <img
+            src={image.file_url}
+            alt={t("Plant photo captured at {time}", { time: formatDateTime(image.captured_at) })}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </a>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <StatusPill
+              tone={
+                analysis?.status === "ok"
+                  ? analysis.label === "healthy_appearance"
+                    ? "good"
+                    : analysis.label === "uncertain"
+                      ? "warn"
+                      : "info"
+                  : "neutral"
+              }
+              dot={false}
+            >
+              {t(analysisLabel(analysis))}
+            </StatusPill>
+            {analysis?.confidence_pct != null && (
+              <span className="font-mono text-2xs text-muted">
+                {t("{value}% confidence", { value: formatNumber(analysis.confidence_pct, 0) })}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-2xs text-muted">
+            {formatDateTime(image.captured_at)}
+            {image.growth_stage ? ` · ${t(titleCase(image.growth_stage))}` : ""}
+          </p>
+          {image.note && <p className="mt-1 text-2xs leading-relaxed text-muted">{image.note}</p>}
+          {analysis?.summary && (
+            <p className="mt-1.5 text-xs leading-relaxed text-ink">{analysis.summary}</p>
+          )}
+          {differences.length > 0 && (
+            <ul className="mt-1.5 space-y-0.5">
+              {differences.slice(0, 4).map((item) => (
+                <li key={item} className="text-2xs leading-relaxed text-muted">
+                  • {item}
+                </li>
+              ))}
+            </ul>
+          )}
+          {analysis?.status === "unavailable" && (
+            <p className="mt-1.5 text-2xs leading-relaxed text-clay-600">
+              {analysis.summary ?? t("No AI key was configured, so no label was invented.")}
+            </p>
+          )}
+          {analysis && analysis.limitations.length > 0 && (
+            <p className="mt-1 text-2xs leading-relaxed text-muted">{analysis.limitations[0]}</p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {(!analysis || analysis.status === "unavailable") && (
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => onAnalyze(image.id)}
+                disabled={busy}
+              >
+                {busy ? t("Reviewing…") : t("Run AI review")}
+              </button>
+            )}
+            <span className="text-2xs text-muted">
+              {analysis?.comparison?.healthy_reference_available
+                ? t("Compared with the crop healthy reference")
+                : t("No healthy reference available for this crop")}
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function PlantImagesPanel({ field }: { field: Field }) {
+  const { t } = useI18n();
+  const [data, setData] = useState<FieldImages | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState("");
+  const [note, setNote] = useState("");
+  const [refLabel, setRefLabel] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      setData(await api.fieldImages(field.id));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("Plant images could not be loaded."));
+    } finally {
+      setLoading(false);
+    }
+  }, [field.id, t]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function uploadPhoto(file: File) {
+    setBusy(true);
+    setError(null);
+    try {
+      const image_base64 = await fileToBase64(file);
+      await api.uploadRobotImage(
+        field.id,
+        {
+          image_base64,
+          content_type: file.type || "image/jpeg",
+          growth_stage: stage || undefined,
+          note: note.trim() || undefined,
+        },
+        true,
+      );
+      setNote("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("The photo could not be uploaded."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function uploadReference(file: File) {
+    if (!refLabel.trim()) {
+      setError(t("Give the healthy reference a label first."));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.uploadReference({
+        crop_id: field.crop_id,
+        label: refLabel.trim(),
+        image_base64: await fileToBase64(file),
+        content_type: file.type || "image/jpeg",
+        source_note: "Uploaded from the field robot page",
+      });
+      setRefLabel("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("The healthy reference could not be saved."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reanalyze(imageId: number) {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.analyzeRobotImage(imageId);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("The AI review could not be run."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const references = data?.references ?? [];
+  const images = data?.images ?? [];
+
+  return (
+    <section className="card card-pad" aria-labelledby="robot-images-heading">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 id="robot-images-heading" className="flex items-center gap-1.5 text-sm font-semibold">
+            <LeafIcon size={15} />
+            {t("Robot camera and plant health")}
+          </h2>
+          <p className="mt-0.5 max-w-2xl text-2xs leading-relaxed text-muted">
+            {t(
+              "Robot Camera → Upload → Backend → AI vision review → Comparison with the crop healthy reference and the previous photo → stored result. The review is advisory and always shows a confidence value; it is not a confirmed diagnosis.",
+            )}
+          </p>
+        </div>
+        <button type="button" className="btn-ghost btn-sm" onClick={() => void load()} disabled={loading}>
+          <RefreshIcon size={13} />
+          {t("Refresh")}
+        </button>
+      </div>
+
+      {error && (
+        <p className="mt-3 flex items-start gap-1.5 rounded-md border border-line bg-sage-50 p-2.5 text-2xs text-clay-600">
+          <AlertIcon size={13} />
+          {error}
+        </p>
+      )}
+
+      {loading && <p className="mt-3 text-xs text-muted">{t("Loading plant images…")}</p>}
+
+      {!loading && (
+        <>
+          <div className="mt-4 rounded-md border border-line bg-sage-50/60 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold text-ink">{t("Healthy reference for {crop}", { crop: t(field.crop_name) })}</p>
+                <p className="mt-0.5 text-2xs text-muted">
+                  {references.length > 0
+                    ? t("{count} reference image(s) stored on the server", { count: references.length })
+                    : t("No healthy reference is stored for this crop yet. Without one, the review compares only with the previous photo.")}
+                </p>
+              </div>
+            </div>
+            {references.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {references.map((reference) => (
+                  <a
+                    key={reference.id}
+                    href={reference.file_url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="flex items-center gap-2 rounded-md border border-line bg-white p-1.5 pe-2.5"
+                  >
+                    <img src={reference.file_url} alt={reference.label} className="h-10 w-10 rounded object-cover" />
+                    <span className="text-2xs text-ink">{reference.label}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+            <details className="mt-2">
+              <summary className="cursor-pointer text-2xs font-semibold text-forest-700 hover:underline">
+                {t("Add a healthy reference image")}
+              </summary>
+              <div className="mt-2 flex flex-wrap items-end gap-2">
+                <input
+                  value={refLabel}
+                  onChange={(event) => setRefLabel(event.target.value)}
+                  placeholder={t("Reference label")}
+                  maxLength={120}
+                  className="input max-w-[220px] py-1.5 text-xs"
+                />
+                <label className="btn-secondary btn-sm cursor-pointer">
+                  {busy ? t("Saving…") : t("Choose image")}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    disabled={busy}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void uploadReference(file);
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            </details>
+          </div>
+
+          <div className="mt-4 rounded-md border border-dashed border-line bg-card p-3">
+            <p className="text-xs font-semibold text-ink">{t("Upload a plant photo")}</p>
+            <p className="mt-0.5 text-2xs leading-relaxed text-muted">
+              {t(
+                "The file is sent to the backend and stored with its capture time, crop, stage and location. No image is generated or modified.",
+              )}
+            </p>
+            <div className="mt-2 flex flex-wrap items-end gap-2">
+              <label className="text-2xs text-muted">
+                {t("Growth stage")}
+                <select
+                  value={stage}
+                  onChange={(event) => setStage(event.target.value)}
+                  className="input mt-0.5 block py-1.5 text-xs"
+                >
+                  <option value="">{t("Not specified")}</option>
+                  {PLANT_STAGES.map((item) => (
+                    <option key={item} value={item}>
+                      {t(titleCase(item))}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <input
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder={t("Optional note")}
+                maxLength={255}
+                className="input max-w-[240px] py-1.5 text-xs"
+              />
+              <label className="btn-primary btn-sm cursor-pointer">
+                {busy ? t("Uploading…") : t("Upload and review")}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  disabled={busy}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadPhoto(file);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+
+          {images.length === 0 ? (
+            <p className="mt-4 rounded-md border border-dashed border-line bg-sage-50 p-3 text-2xs leading-relaxed text-muted">
+              {t("No robot plant photos yet. Historical photos and their reviews will appear here.")}
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <h3 className="text-xs font-semibold text-ink">{t("Photo history and reviews")}</h3>
+                <span className="text-2xs text-muted">
+                  {t("{count} image(s) · newest first", { count: images.length })}
+                </span>
+              </div>
+              {images.map((image) => (
+                <RobotImageCard key={image.id} image={image} onAnalyze={reanalyze} busy={busy} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </section>
   );
 }
@@ -770,6 +1113,7 @@ function RobotWorkspace({ field }: { field: Field }) {
           {devices.status === "success" && (
             <LiveFeed field={field} devices={devices.data ?? []} reloadDevices={devices.reload} />
           )}
+          <PlantImagesPanel field={field} />
           {devices.status === "loading" && (
             <p className="card card-pad text-xs text-muted">{t("Loading devices…")}</p>
           )}

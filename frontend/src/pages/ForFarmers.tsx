@@ -24,6 +24,7 @@ import {
   addDaysIso,
   daysBetween,
   formatDate,
+  formatDateTime,
   formatNumber,
   todayIso,
 } from "../lib/format";
@@ -337,11 +338,29 @@ function FarmerBody({ field }: { field: Field }) {
                   {t("Best time to irrigate: early morning or after sunset.")}
                 </p>
               )}
-              {irrigation.net_requirement_mm !== null && (
+              <p className="text-muted">
+                {irrigation.robot_soil_moisture.status === "fresh" &&
+                irrigation.robot_soil_moisture.latest_pct !== null
+                  ? t("Soil moisture measured by the robot: {value}% at {time}", {
+                      value: formatNumber(irrigation.robot_soil_moisture.latest_pct, 1),
+                      time: formatDateTime(irrigation.robot_soil_moisture.measured_at),
+                    })
+                  : irrigation.robot_soil_moisture.status === "stale"
+                    ? t("Robot data unavailable: the last soil reading is old.")
+                    : t("Robot data unavailable: no current soil moisture reading.")}
+              </p>
+              {irrigation.water_requirement.status === "estimated" ? (
                 <p className="text-muted">
-                  {t("Water needed to refill the root zone: {value} mm", {
-                    value: formatNumber(irrigation.net_requirement_mm, 1),
+                  {t("Estimated water requirement: {value} mm", {
+                    value: formatNumber(
+                      irrigation.water_requirement.gross_mm ?? irrigation.water_requirement.net_mm,
+                      1,
+                    ),
                   })}
+                </p>
+              ) : (
+                <p className="text-muted">
+                  {t("Insufficient data to estimate water requirement.")}
                 </p>
               )}
               <p className="text-muted">

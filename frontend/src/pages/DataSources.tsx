@@ -235,9 +235,9 @@ export function DataSourcesPage() {
                 </div>
               ))}
             </div>
-            <InfoNote tone="warn" title={t("No catalogue dataset is measured")}>
+            <InfoNote tone="warn" title={t("Measured and modelled data are labelled")}>
               {t(
-                "None of the connected catalogue datasets is a measured feed: field values come from reanalysis, satellites, models or forecasts, and each one says so. Readings from a robot you pair yourself are measured point observations and appear only on that field's Robot page, not in this catalogue.",
+                "Most catalogue datasets are reanalysis, satellites, models or forecasts. Robot sensor and camera data are measured point observations from the AgriNASA robot and are labelled as measured; one probe point does not represent the whole field. When the robot is offline the app says the data is unavailable instead of filling the gap.",
               )}
             </InfoNote>
           </section>

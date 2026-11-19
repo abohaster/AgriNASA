@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Field } from "../api/types";
+import type {
+  DataSourceRef,
+  Field,
+  HealthyReference,
+  MoisturePoint,
+  PlantImageAnalysis,
+  RobotImage,
+} from "../api/types";
 import {
   Area,
   AreaChart,
@@ -22,12 +29,21 @@ import { ChartCard } from "../components/ui/ChartCard";
 import { DataSourceBadge } from "../components/ui/DataSourceBadge";
 import { InfoNote } from "../components/ui/InfoNote";
 import { SectionHeading } from "../components/ui/SectionHeading";
+import { StatusPill, type Tone } from "../components/ui/StatusPill";
 import { useDataMode } from "../context/DataModeContext";
 import { useTheme } from "../context/ThemeContext";
 import { useAsync } from "../hooks/useAsync";
 import { useFieldIdFromRoute } from "../hooks/useField";
 import { useI18n } from "../i18n/I18nContext";
-import { formatDate, formatDateShort, formatNumber } from "../lib/format";
+import {
+  formatDate,
+  formatDateShort,
+  formatDateTime,
+  formatNumber,
+  formatTimestampClock,
+  formatTimestampDay,
+  titleCase,
+} from "../lib/format";
 import { VARIABLE_META } from "../lib/labels";
 import { resolvePeriod, type DatePeriod } from "../lib/period";
 import { PeriodSelector } from "../components/ui/PeriodSelector";
@@ -308,6 +324,406 @@ function EnvironmentCharts({ environment }: { environment: EnvironmentResponse }
   );
 }
 
+const ROBOT_MOISTURE_SOURCE: DataSourceRef = {
+  id: "robot-soil-moisture",
+  name: "AgriNASA robot",
+  nature: "measured",
+  resolution: "Point reading at the robot's soil probe",
+  attribution: "Field-level sensor data collected directly by the AgriNASA robot",
+  url: null,
+};
+
+function SensorMoistureChart({ sensor, points }: { sensor: string; points: MoisturePoint[] }) {
+  const { t } = useI18n();
+  const { chart } = useTheme();
+  const axis = { fontSize: 10, fill: chart.tick };
+  const data = points.map((point) => ({
+    time: new Date(point.measured_at).getTime(),
+    pct: point.soil_moisture_pct,
+  }));
+  const sameDay =
+    data.length > 1 &&
+    data[data.length - 1].time - data[0].time <= 36 * 60 * 60 * 1000;
+
+  return (
+    <ChartCard
+      title={t("Robot soil moisture")}
+      description={t(
+        "Measured volumetric soil moisture at the robot's probe. A gap means the robot did not report; it is never filled with an estimate.",
+      )}
+      source={<DataSourceBadge source={ROBOT_MOISTURE_SOURCE} />}
+      footnote={
+        <>
+          {sensor} · {t("% volumetric")} · {points.length} {t(points.length === 1 ? "reading" : "readings")}
+        </>
+      }
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: -12 }}>
+          <CartesianGrid stroke={chart.grid} strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="time"
+            type="number"
+            domain={["dataMin", "dataMax"]}
+            tickFormatter={(value: number) =>
+              sameDay ? formatTimestampClock(value) : formatTimestampDay(value)
+            }
+            tick={axis}
+            minTickGap={26}
+            tickLine={false}
+            axisLine={{ stroke: chart.grid }}
+          />
+          <YAxis tick={axis} tickLine={false} axisLine={false} width={40} unit="%" />
+          <Tooltip
+            contentStyle={chart.tooltip.contentStyle}
+            labelStyle={chart.tooltip.labelStyle}
+            labelFormatter={(label) => formatDateTime(new Date(Number(label)).toISOString())}
+            formatter={(value) => [`${formatNumber(Number(value), 1)} %`, t("Soil moisture")]}
+          />
+          <Line
+            type="monotone"
+            dataKey="pct"
+            name={t("Soil moisture (%)")}
+            stroke={chart.tempMean}
+            strokeWidth={2.2}
+            dot={{ r: 2 }}
+            connectNulls={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+function RobotMoistureHistory({ fieldId, period }: { fieldId: number; period: DatePeriod }) {
+  const { t } = useI18n();
+  const state = useAsync(
+    (signal) =>
+      api.fieldMoisture(
+        fieldId,
+        { start: `${period.start}T00:00:00`, end: `${period.end}T23:59:59`, limit: 2000 },
+        signal,
+      ),
+    [fieldId, period.start, period.end],
+  );
+
+  const data = state.data;
+
+  const groups = useMemo(() => {
+    const grouped = new Map<string, MoisturePoint[]>();
+    for (const point of data?.points ?? []) {
+      const key = point.sensor_label || point.sensor_id || "Robot soil sensor";
+      const list = grouped.get(key) ?? [];
+      list.push(point);
+      grouped.set(key, list);
+    }
+    return Array.from(grouped, ([sensor, points]) => ({
+      sensor,
+      points: points.slice().sort((a, b) => a.measured_at.localeCompare(b.measured_at)),
+    }));
+  }, [data]);
+
+  const fresh = data?.status === "fresh";
+
+  return (
+    <section aria-labelledby="robot-moisture-heading" className="space-y-3">
+      <div>
+        <h2 id="robot-moisture-heading" className="text-sm font-semibold">
+          {t("Robot soil moisture history")}
+        </h2>
+        <p className="mt-0.5 text-xs leading-relaxed text-muted">
+          {t(
+            "Readings stored exactly as the robot sent them, with their own timestamps, sensor ids and measurement status. When the robot is offline the platform reports that soil moisture is unavailable instead of inventing a value.",
+          )}
+        </p>
+      </div>
+
+      {state.status === "loading" && (
+        <LoadingState label={t("Loading robot soil-moisture readings…")} rows={2} variant="chart" />
+      )}
+
+      {state.status === "error" && (
+        <ErrorState
+          title={t("Robot soil-moisture history could not be loaded")}
+          message={state.error?.message ?? t("The robot history endpoint did not respond.")}
+          onRetry={state.reload}
+        />
+      )}
+
+      {data && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="card p-4">
+              <p className="text-2xs uppercase tracking-[0.08em] text-muted">{t("Latest reading")}</p>
+              <p className="mono-data mt-1 text-xl font-semibold">
+                {data.latest_pct != null ? (
+                  <>
+                    {formatNumber(data.latest_pct, 1)}{" "}
+                    <span className="text-sm font-normal text-muted">{t("% volumetric")}</span>
+                  </>
+                ) : (
+                  t("Unavailable")
+                )}
+              </p>
+              {data.latest_measured_at && (
+                <p className="mt-1 text-2xs text-muted">
+                  {t("Measured at")} {formatDateTime(data.latest_measured_at)}
+                </p>
+              )}
+              {data.latest_sensor_id && (
+                <p className="text-2xs font-mono text-muted">{data.latest_sensor_id}</p>
+              )}
+            </div>
+            <div className="card p-4">
+              <p className="text-2xs uppercase tracking-[0.08em] text-muted">{t("Readings in period")}</p>
+              <p className="mono-data mt-1 text-xl font-semibold">{data.reading_count}</p>
+              <p className="mt-1 text-2xs text-muted">
+                {data.sensor_count} {data.sensor_count === 1 ? t("sensor") : t("sensors")}
+              </p>
+            </div>
+            <div className="card p-4">
+              <p className="text-2xs uppercase tracking-[0.08em] text-muted">{t("Mean in period")}</p>
+              <p className="mono-data mt-1 text-xl font-semibold">
+                {data.mean_pct != null ? formatNumber(data.mean_pct, 1) : "—"}{" "}
+                <span className="text-sm font-normal text-muted">{t("% volumetric")}</span>
+              </p>
+            </div>
+            <div className="card p-4">
+              <p className="text-2xs uppercase tracking-[0.08em] text-muted">{t("Range in period")}</p>
+              <p className="mono-data mt-1 text-xl font-semibold">
+                {data.min_pct != null && data.max_pct != null
+                  ? `${formatNumber(data.min_pct, 1)}–${formatNumber(data.max_pct, 1)}`
+                  : "—"}{" "}
+                <span className="text-sm font-normal text-muted">{t("% volumetric")}</span>
+              </p>
+            </div>
+          </div>
+
+          {!fresh && groups.length > 0 && (
+            <InfoNote tone="warn" title={t("Robot data unavailable")}>
+              {data.reason
+                ? t(data.reason)
+                : t("The robot has not reported fresh soil moisture for this field recently.")}
+            </InfoNote>
+          )}
+
+          {groups.length === 0 ? (
+            data.status === "unavailable" ? (
+              <InfoNote tone="warn" title={t("Robot data unavailable")}>
+                {data.reason
+                  ? t(data.reason)
+                  : t("No soil-moisture readings were recorded by the robot in the selected period.")}
+              </InfoNote>
+            ) : (
+              <InfoNote title={t("No readings in this period")}>
+                {t(
+                  "The robot's latest reading falls outside the selected period. Choose Today or a custom period that includes it.",
+                )}
+              </InfoNote>
+            )
+          ) : (
+            <div className={`grid gap-5 ${groups.length > 1 ? "xl:grid-cols-2" : ""}`}>
+              {groups.map((group) => (
+                <SensorMoistureChart key={group.sensor} sensor={group.sensor} points={group.points} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function imageReview(analysis: PlantImageAnalysis | null): { text: string; tone: Tone } {
+  if (!analysis) return { text: "Not analysed yet", tone: "neutral" };
+  if (analysis.status === "unavailable") return { text: "AI review unavailable", tone: "neutral" };
+  if (analysis.label === "healthy_appearance") {
+    return { text: analysis.label_text ?? "Healthy appearance", tone: "good" };
+  }
+  if (analysis.label === "uncertain") {
+    return { text: analysis.label_text ?? "Uncertain — additional inspection recommended", tone: "neutral" };
+  }
+  return { text: analysis.label_text ?? "Possible stress", tone: "warn" };
+}
+
+function PlantImageTile({
+  title,
+  image,
+  emptyText,
+}: {
+  title: string;
+  image: RobotImage | null;
+  emptyText: string;
+}) {
+  const { t } = useI18n();
+
+  if (!image) {
+    return (
+      <div className="flex min-h-44 flex-col justify-between rounded-lg border border-dashed border-line p-4">
+        <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted">{title}</p>
+        <p className="mt-3 text-xs leading-relaxed text-muted">{emptyText}</p>
+      </div>
+    );
+  }
+
+  const review = imageReview(image.analysis);
+
+  return (
+    <article className="overflow-hidden rounded-lg border border-line">
+      <img
+        src={image.file_url}
+        alt={t("Plant photo captured by the robot")}
+        className="aspect-[4/3] w-full object-cover"
+        loading="lazy"
+      />
+      <div className="space-y-1.5 p-3">
+        <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted">{title}</p>
+        <p className="text-2xs text-muted">
+          {t("Captured at")} {formatDateTime(image.captured_at)}
+        </p>
+        {image.growth_stage && (
+          <p className="text-2xs text-muted">
+            {t("Growth stage")}: {t(titleCase(image.growth_stage))}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <StatusPill tone={review.tone}>{t(review.text)}</StatusPill>
+          {image.analysis?.confidence_pct != null && (
+            <span className="font-mono text-2xs text-muted">
+              {formatNumber(image.analysis.confidence_pct, 0)}% {t("confidence")}
+            </span>
+          )}
+        </div>
+        {image.analysis?.summary && (
+          <p className="text-2xs leading-relaxed text-muted">{t(image.analysis.summary)}</p>
+        )}
+        {image.note && <p className="text-2xs leading-relaxed text-muted">{image.note}</p>}
+      </div>
+    </article>
+  );
+}
+
+function ReferenceTile({ reference }: { reference: HealthyReference | null }) {
+  const { t } = useI18n();
+
+  if (!reference) {
+    return (
+      <div className="flex min-h-44 flex-col justify-between rounded-lg border border-dashed border-line p-4">
+        <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted">
+          {t("Healthy reference")}
+        </p>
+        <p className="mt-3 text-xs leading-relaxed text-muted">
+          {t(
+            "No healthy reference photo is stored for this crop yet, so the review can only describe the photo.",
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <article className="overflow-hidden rounded-lg border border-line">
+      <img
+        src={reference.file_url}
+        alt={t("Healthy reference photo for this crop")}
+        className="aspect-[4/3] w-full object-cover"
+        loading="lazy"
+      />
+      <div className="space-y-1.5 p-3">
+        <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted">
+          {t("Healthy reference")}
+        </p>
+        <p className="text-xs font-medium">{reference.label}</p>
+        <p className="text-2xs text-muted">
+          {t("Added")} {formatDateTime(reference.created_at)}
+        </p>
+        {reference.source_note && (
+          <p className="text-2xs leading-relaxed text-muted">{reference.source_note}</p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function HistoricalPlantImages({ field, period }: { field: Field; period: DatePeriod }) {
+  const { t } = useI18n();
+  const state = useAsync(
+    (signal) =>
+      api.fieldImages(
+        field.id,
+        { start: `${period.start}T00:00:00`, end: `${period.end}T23:59:59`, limit: 200 },
+        signal,
+      ),
+    [field.id, period.start, period.end],
+  );
+
+  const images = state.data?.images ?? [];
+  const reference = state.data?.references[0] ?? null;
+
+  return (
+    <section aria-labelledby="plant-images-heading" className="card card-pad">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 id="plant-images-heading" className="text-sm font-semibold">
+            {t("Plant images and health comparison")}
+          </h2>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+            {t(
+              "The latest robot photo, the one before it, and the healthy reference for this crop. AI review labels stay cautious and always carry a confidence value; they are not a confirmed diagnosis.",
+            )}
+          </p>
+        </div>
+        <Link to={`/robot/${field.id}`} className="btn-secondary btn-sm shrink-0">
+          {t("Robot camera")}
+        </Link>
+      </div>
+
+      {state.status === "loading" && (
+        <div className="mt-4">
+          <LoadingState label={t("Loading robot plant images…")} rows={2} />
+        </div>
+      )}
+
+      {state.status === "error" && (
+        <div className="mt-4">
+          <ErrorState
+            title={t("Robot plant images could not be loaded")}
+            message={state.error?.message ?? t("The robot image endpoint did not respond.")}
+            onRetry={state.reload}
+          />
+        </div>
+      )}
+
+      {state.data && (
+        <>
+          {images.length === 0 && (
+            <div className="mt-4">
+              <InfoNote title={t("No plant photos in this period")}>
+                {t(
+                  "The robot did not upload a plant photo inside the selected period. Health comparison resumes when a new image arrives.",
+                )}
+              </InfoNote>
+            </div>
+          )}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <PlantImageTile
+              title={t("Current image")}
+              image={images[0] ?? null}
+              emptyText={t("No photo was captured by the robot in this period.")}
+            />
+            <PlantImageTile
+              title={t("Previous image")}
+              image={images[1] ?? null}
+              emptyText={t("There is no earlier photo to compare inside this period.")}
+            />
+            <ReferenceTile reference={reference} />
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 function AnalyticsBody({ field }: { field: Field }) {
   const { t } = useI18n();
   const { mode, isDemo } = useDataMode();
@@ -452,6 +868,9 @@ function AnalyticsBody({ field }: { field: Field }) {
           </section>
         </>
       )}
+
+      <RobotMoistureHistory fieldId={fieldId} period={period} />
+      <HistoricalPlantImages field={field} period={period} />
     </>
   );
 }
