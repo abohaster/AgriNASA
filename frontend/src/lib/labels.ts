@@ -43,6 +43,7 @@ export const NATURE_LABELS: Record<DataNature, string> = {
   estimated: "Estimated",
   derived: "Derived value",
   calculated: "Calculated",
+  measured: "Measured on site",
   optional: "Optional interface",
 };
 
@@ -53,6 +54,7 @@ export const NATURE_TONE: Record<DataNature, "good" | "info" | "neutral" | "warn
   estimated: "warn",
   derived: "neutral",
   calculated: "neutral",
+  measured: "good",
   optional: "warn",
 };
 

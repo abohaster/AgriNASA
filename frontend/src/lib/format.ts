@@ -47,6 +47,22 @@ export function formatDateShort(value: string | null | undefined): string {
   });
 }
 
+/** Month and day only, for dense chart axes of timestamped readings. */
+export function formatTimestampDay(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString(locale(), { month: "short", day: "numeric" });
+}
+
+/** Clock time only, for charts whose readings all fall on the same day. */
+export function formatTimestampClock(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" });
+}
+
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
   const date = new Date(value);
