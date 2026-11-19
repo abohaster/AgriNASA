@@ -93,12 +93,39 @@ class DeviceTokenOut(BaseModel):
     field_name: str
 
 
+MEASUREMENT_STATUSES = ("ok", "degraded", "error")
+
+
 class SensorReadingIn(BaseModel):
     soil_moisture_pct: float | None = Field(default=None, ge=0, le=100)
     air_temp_c: float | None = Field(default=None, ge=-40, le=60)
     humidity_pct: float | None = Field(default=None, ge=0, le=100)
     distance_cm: float | None = Field(default=None, ge=2, le=500)
+    sensor_id: str | None = Field(default=None, max_length=64)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    status: str = Field(default="ok", max_length=24)
     measured_at: datetime | None = None
+
+    @field_validator("sensor_id")
+    @classmethod
+    def _clean_sensor_id(cls, value: str | None) -> str | None:
+        cleaned = value.strip() if value else ""
+        return cleaned[:64] or None
+
+    @field_validator("status")
+    @classmethod
+    def _known_status(cls, value: str) -> str:
+        normalised = value.strip().lower()
+        if normalised not in MEASUREMENT_STATUSES:
+            raise ValueError(f"status must be one of {', '.join(MEASUREMENT_STATUSES)}")
+        return normalised
+
+    @model_validator(mode="after")
+    def _coordinates_pair(self) -> "SensorReadingIn":
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("Send both latitude and longitude, or neither.")
+        return self
 
     @model_validator(mode="after")
     def _at_least_one_value(self) -> "SensorReadingIn":
@@ -121,6 +148,10 @@ class SensorReadingOut(BaseModel):
     air_temp_c: float | None
     humidity_pct: float | None
     distance_cm: float | None
+    sensor_id: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    status: str = "ok"
     measured_at: datetime
     received_at: datetime
 
