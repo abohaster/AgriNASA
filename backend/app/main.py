@@ -30,6 +30,7 @@ from app.api.routers import (
     geocode,
     location,
     meta,
+    robot,
     satellite,
 )
 from app.config import get_settings
@@ -153,6 +154,7 @@ app.include_router(fale7_api_router, prefix="/api")
 app.include_router(devices.router, prefix="/api")
 app.include_router(devices.readings_router, prefix="/api")
 app.include_router(devices.field_router, prefix="/api")
+app.include_router(robot.router, prefix="/api")
 
 
 # ── Built frontend (single-container deployments) ───────────────────────────

@@ -157,6 +157,34 @@ GEE_IMERG = {
     "description": "Satellite precipitation estimate; a rain gauge remains the local reference.",
 }
 
+ROBOT_SOIL_MOISTURE = {
+    "id": "robot-soil-moisture",
+    "name": "AgriNASA robot · soil moisture probe",
+    "nature": "measured",
+    "resolution": "Point measurement · one sensor location and depth",
+    "attribution": "Field-level sensor data collected directly by the AgriNASA robot",
+    "url": None,
+    "description": (
+        "Field-level sensor data collected directly by the AgriNASA robot. Each reading "
+        "carries a timestamp, sensor id, device, GPS position and status. One probe is a "
+        "point measurement, not a whole-field average."
+    ),
+}
+
+ROBOT_CAMERA = {
+    "id": "robot-camera",
+    "name": "AgriNASA robot · plant camera",
+    "nature": "measured",
+    "resolution": "Plant-level image · one camera position per capture",
+    "attribution": "Field-level sensor/camera data collected directly by the AgriNASA robot",
+    "url": None,
+    "description": (
+        "Field-level sensor/camera data collected directly by the AgriNASA robot. The "
+        "image is a real observation; the AI vision review is an advisory visual "
+        "assessment with a confidence value, not a confirmed diagnosis."
+    ),
+}
+
 CROP_REFERENCE = {
     "id": "crop-reference",
     "name": "Crop agronomic references",
@@ -201,6 +229,8 @@ SOURCE_CATALOGUE: list[dict[str, Any]] = [
     GEE_LANDCOVER,
     GEE_SMAP,
     GEE_IMERG,
+    ROBOT_SOIL_MOISTURE,
+    ROBOT_CAMERA,
     CROP_REFERENCE,
     DERIVED_SUITABILITY,
     WAPOR,
@@ -224,6 +254,7 @@ def source_ref(source_id: str) -> dict[str, Any]:
 
 GLOBAL_LIMITATIONS = [
     "NASA POWER values are reanalysis/model-derived and spatially coarse (~50 km); they are not on-farm measurements.",
-    "Irrigation output is a decision-support estimate, not a validated prescription or sensor reading.",
-    "No disease diagnosis is performed; the crop-health module reports environmental stress indicators only.",
+    "Robot soil moisture is a measured point reading at one location and depth, not a whole-field average.",
+    "Irrigation output is a decision-support estimate, not a validated prescription or applied volume.",
+    "The crop-health module reports environmental stress indicators only. AI image review is an advisory visual assessment, not a confirmed diagnosis.",
 ]

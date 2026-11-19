@@ -85,6 +85,11 @@ class Settings(BaseSettings):
     explore_cache_ttl_seconds: int = 30 * 60
     history_cache_ttl_seconds: int = 12 * 60 * 60
 
+    # ── Robot media (plant photos + healthy references) ──────────────────
+    # Files stay on the server volume; the database stores metadata only.
+    robot_media_dir: str = str(BACKEND_DIR / "data" / "robot_media")
+    robot_image_max_bytes: int = 8 * 1024 * 1024
+
     # ── FAO WaPOR (optional, registration required) ──────────────────────
     # WaPOR needs a personal API token from https://data.apps.fao.org/wapor.
     # Leave empty: the app then reports WaPOR as not configured and uses
@@ -168,6 +173,10 @@ class Settings(BaseSettings):
     @property
     def demo_snapshot_file(self) -> Path:
         return Path(self.demo_snapshot_path)
+
+    @property
+    def robot_media_path(self) -> Path:
+        return Path(self.robot_media_dir)
 
 
 @lru_cache
