@@ -32,6 +32,7 @@ from app.schemas.assistant import ChatRequest, ChatResponse
 from app.services import crop_health
 from app.services import environment as environment_service
 from app.services import irrigation as irrigation_service
+from app.services import plant_images as plant_images_service
 from app.services import vegetation as vegetation_service
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,7 @@ async def chat(
         analysis_planting_date=analysis_planting,
         environment_latitude=series.latitude,
         environment_longitude=series.longitude,
+        plant_images=plant_images_service.context_block(session, field),
     )
 
     # 3) Resolve the conversation before adding the new user message so the

@@ -392,7 +392,6 @@ def build_history(
                 **day,
                 "humidity_pct": _round(extra.get("humidity_pct")),
                 "soil_moisture_0_7cm_pct": _round(extra.get("soil_moisture_pct")),
-                "soil_temperature_0_7cm_c": _round(extra.get("soil_temperature_c")),
             }
         )
 

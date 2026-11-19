@@ -294,7 +294,6 @@ def build_overview(
                 _reading("pressure_hpa", "Surface pressure", current_raw.get("pressure_hpa"), "hPa", "open-meteo-current", observed_at=observed),
                 _reading("cloud_cover_pct", "Cloud cover", current_raw.get("cloud_cover_pct"), "%", "open-meteo-current", observed_at=observed),
                 _reading("soil_moisture_0_7cm_pct", "Soil moisture (0-7 cm, model)", current_raw.get("soil_moisture_0_7cm_pct"), "% vol", "open-meteo-current", observed_at=observed, confidence="low", note="ERA5-Land model value, not a probe."),
-                _reading("soil_temperature_6cm_c", "Soil temperature (6 cm, model)", current_raw.get("soil_temperature_6cm_c"), "°C", "open-meteo-current", observed_at=observed, confidence="low", note="ERA5-Land model value, not a probe."),
                 _reading("et0_today_mm", "Reference ET₀ today", current_raw.get("et0_today_mm"), "mm/day", "open-meteo-current", observed_at=observed, note="FAO-56 reference evapotranspiration computed by Open-Meteo."),
                 _reading("solar_today_mj_m2", "Solar radiation today", current_raw.get("solar_today_mj_m2"), "MJ/m²", "open-meteo-current", observed_at=observed),
             ],

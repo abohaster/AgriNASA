@@ -25,9 +25,11 @@ from app.schemas.irrigation import (
     Driver,
     GrowthStageOut,
     IrrigationAnalysis,
+    RobotSoilMoistureOut,
     WaterBalanceSummary,
+    WaterRequirementOut,
 )
-from app.science.crop_coefficient import days_after_planting, stage_for_day
+from app.science.crop_coefficient import days_after_planting, root_depth_m, stage_for_day
 from app.science.interfaces import ConfidenceResult, DemandClassification
 from app.science.irrigation import (
     ConfidenceFactors,
@@ -42,6 +44,7 @@ from app.science.water_balance import (
     simulate_water_balance,
 )
 from app.services import environment as environment_service
+from app.services import robot as robot_service
 from app.services.processing import recent_precipitation_total
 
 MIN_ET0_COVERAGE = 0.80
@@ -100,6 +103,67 @@ def _stage_out(stage) -> GrowthStageOut:
     )
 
 
+def _unavailable_robot(reason: str) -> RobotSoilMoistureOut:
+    return RobotSoilMoistureOut(
+        status="unavailable",
+        latest_pct=None,
+        measured_at=None,
+        sensor_id=None,
+        device_label=None,
+        measurement_status=None,
+        reading_count_24h=0,
+        sensor_count=0,
+        mean_pct_24h=None,
+        min_pct_24h=None,
+        max_pct_24h=None,
+        latitude=None,
+        longitude=None,
+        reason=reason,
+        note=(
+            "A robot probe is the only measured soil-moisture source here. "
+            "Model and satellite soil moisture are not substituted for it."
+        ),
+    )
+
+
+def _robot_out(moisture) -> RobotSoilMoistureOut:
+    return RobotSoilMoistureOut(
+        status=moisture.status,
+        latest_pct=moisture.latest_pct,
+        measured_at=moisture.latest_measured_at,
+        sensor_id=moisture.latest_sensor_id,
+        device_label=moisture.latest_device_label,
+        measurement_status=moisture.measurement_status,
+        reading_count_24h=moisture.reading_count_24h,
+        sensor_count=moisture.sensor_count,
+        mean_pct_24h=moisture.mean_pct_24h,
+        min_pct_24h=moisture.min_pct_24h,
+        max_pct_24h=moisture.max_pct_24h,
+        latitude=moisture.latest_latitude,
+        longitude=moisture.latest_longitude,
+        reason=moisture.reason,
+        note=(
+            "Measured by the field robot at one point and depth. It does not "
+            "represent the whole field; several readings are summarised only "
+            "when they exist."
+        ),
+    )
+
+
+def _no_water_requirement(reason: str, confidence: str = "low") -> WaterRequirementOut:
+    return WaterRequirementOut(
+        status="insufficient_data",
+        method="none",
+        net_mm=None,
+        gross_mm=None,
+        volume_m3=None,
+        area_ha=None,
+        assumptions=[],
+        reason=reason,
+        confidence=confidence,  # type: ignore[arg-type]
+    )
+
+
 def _insufficient(
     *,
     stage: GrowthStageOut | None,
@@ -110,6 +174,10 @@ def _insufficient(
     is_demo: bool,
     missing_inputs: list[str],
     season_complete: bool = False,
+    robot: RobotSoilMoistureOut | None = None,
+    moisture_assessment: str = "unknown",
+    irrigation_needed: bool | None = None,
+    water_requirement: WaterRequirementOut | None = None,
 ) -> IrrigationAnalysis:
     return IrrigationAnalysis(
         status="insufficient_data",
@@ -132,6 +200,105 @@ def _insufficient(
         limitations=limits,
         source=source_ref("derived-power"),
         is_demo=is_demo,
+        robot_soil_moisture=robot
+        or _unavailable_robot("No current robot soil-moisture reading is available."),
+        moisture_assessment=moisture_assessment,  # type: ignore[arg-type]
+        irrigation_needed=irrigation_needed,
+        water_requirement=water_requirement
+        or _no_water_requirement(
+            "Insufficient data to estimate water requirement for this analysis date."
+        ),
+    )
+
+
+def _build_water_requirement(
+    *,
+    probe,
+    soil,
+    crop,
+    stage: GrowthStageOut,
+    field: Field,
+    robot_fresh: bool,
+    bucket_net_mm: float | None,
+    bucket_gross_mm: float | None,
+    bucket_confidence: str,
+) -> WaterRequirementOut:
+    """Estimate a refill volume from the best available evidence.
+
+    The probe measures moisture, not litres. Any volume is computed from the
+    probe value plus soil and rooting assumptions, and is always labelled an
+    estimate.
+    """
+    area_ha = field.area_ha
+    efficiency_note = (
+        "Application efficiency is the FAO-typical value for the selected irrigation system."
+        if field.irrigation_system
+        else "No irrigation system was provided, so only a net depth is reported."
+    )
+
+    if robot_fresh and probe is not None and probe.latest_pct is not None:
+        theta = max(0.0, min(1.0, probe.latest_pct / 100.0))
+        depth_m = root_depth_m(crop, stage.progress)
+        deficit_mm = max(0.0, soil.field_capacity - theta) * depth_m * 1000.0
+        net_mm, gross_mm, _efficiency = refill_requirements(
+            depletion_mm=deficit_mm, irrigation_system=field.irrigation_system
+        )
+        volume = round(gross_mm * area_ha * 10.0, 1) if gross_mm is not None and area_ha else None
+        return WaterRequirementOut(
+            status="estimated",
+            method="robot_soil_moisture",
+            net_mm=net_mm,
+            gross_mm=gross_mm,
+            volume_m3=volume,
+            area_ha=area_ha,
+            assumptions=[
+                (
+                    f"The robot probe reading ({probe.latest_pct:.1f}%) is treated as "
+                    "volumetric water content at the probe's location and depth."
+                ),
+                (
+                    f"Refill target is field capacity for the {soil.texture.replace('_', ' ')} "
+                    "texture class; wilting point and field capacity are class averages."
+                ),
+                (
+                    f"Rooting depth is the crop-model estimate for this growth stage "
+                    f"({depth_m:.2f} m)."
+                ),
+                "One probe reading does not represent the whole field; the volume is "
+                "a refill estimate for the probed zone, not a prescription for every spot.",
+                efficiency_note,
+                "The probe measures soil moisture; the water volume is calculated, not measured.",
+            ],
+            reason=None,
+            confidence="medium" if field.soil_texture else "low",
+        )
+
+    if bucket_net_mm is not None:
+        net_mm, gross_mm, _efficiency = refill_requirements(
+            depletion_mm=bucket_net_mm, irrigation_system=field.irrigation_system
+        )
+        volume = round(gross_mm * area_ha * 10.0, 1) if gross_mm is not None and area_ha else None
+        return WaterRequirementOut(
+            status="estimated",
+            method="root_zone_balance",
+            net_mm=net_mm,
+            gross_mm=gross_mm,
+            volume_m3=volume,
+            area_ha=area_ha,
+            assumptions=[
+                "No current robot soil-moisture reading is available, so this estimate "
+                "comes from the FAO-56 root-zone balance driven by coarse-grid weather.",
+                "No irrigation events are recorded; the value is a refill requirement, not applied water.",
+                "Initial root-zone depletion is assumed to be 50% of total available water at planting.",
+                efficiency_note,
+            ],
+            reason=None,
+            confidence=bucket_confidence,  # type: ignore[arg-type]
+        )
+
+    return _no_water_requirement(
+        "Insufficient data to estimate water requirement. A current robot "
+        "soil-moisture reading and/or a complete root-zone water balance is required."
     )
 
 
@@ -187,6 +354,16 @@ def analyze_irrigation(
     final_stage = stage_for_day(crop, final_dap)
     stage_out = _stage_out(final_stage)
 
+    if env.is_demo:
+        probe = None
+        robot_reading = _unavailable_robot(
+            "Demo mode replays a cached weather snapshot; live robot readings are "
+            "not mixed into demo results."
+        )
+    else:
+        probe = robot_service.field_moisture(session, field.id)
+        robot_reading = _robot_out(probe)
+
     base_limitations = [
         GLOBAL_LIMITATIONS[0],
         "Baseline assumes no recorded irrigation events (I = 0); the output is a refill requirement, not applied water.",
@@ -215,6 +392,10 @@ def analyze_irrigation(
             is_demo=env.is_demo,
             missing_inputs=[],
             season_complete=True,
+            robot=robot_reading,
+            water_requirement=_no_water_requirement(
+                "The season has ended, so no irrigation water requirement is estimated."
+            ),
         )
 
     if not points:
@@ -228,6 +409,10 @@ def analyze_irrigation(
             limits=base_limitations,
             is_demo=env.is_demo,
             missing_inputs=["Days after planting must be ≥ 0."],
+            robot=robot_reading,
+            water_requirement=_no_water_requirement(
+                "The field is not planted yet, so no irrigation water requirement is estimated."
+            ),
         )
 
     et0_available = sum(1 for p in points if p["et0_mm_day"] is not None)
@@ -273,7 +458,8 @@ def analyze_irrigation(
     if not soil_provided:
         missing_inputs.append("User-provided soil texture")
 
-    if coverage < MIN_ET0_COVERAGE:
+    robot_fresh = bool(probe and probe.available_for_decision)
+    if coverage < MIN_ET0_COVERAGE and not robot_fresh:
         return _insufficient(
             stage=stage_out,
             balance=balance,
@@ -286,6 +472,11 @@ def analyze_irrigation(
             limits=limits,
             is_demo=env.is_demo,
             missing_inputs=missing_inputs,
+            robot=robot_reading,
+            water_requirement=_no_water_requirement(
+                "Insufficient data to estimate water requirement: either the weather "
+                "inputs are incomplete or no current robot soil-moisture reading exists."
+            ),
         )
 
     # Latest crop water use from the most recent complete day.
@@ -301,14 +492,68 @@ def analyze_irrigation(
         break
 
     rain_7d = recent_precipitation_total(points, 7)
-    demand: DemandClassification = classify_demand(
-        depletion_fraction=balance.depletion_fraction,
-        precipitation_last_7d_mm=rain_7d,
-        etc_mm_day=latest_etc,
-        stress_days=balance.stress_days,
-        moderate_fraction=crop.depletion_fraction_p,
-        crop_name=crop.name,
-    )
+
+    # The robot probe is the primary evidence when it is current: it measures
+    # the actual soil at one point, whereas the bucket is a coarse-grid model.
+    sensor_depletion: float | None = None
+    moisture_assessment: str = "unknown"
+    irrigation_needed: bool | None = None
+    if robot_fresh and probe is not None and probe.latest_pct is not None:
+        theta = max(0.0, min(1.0, probe.latest_pct / 100.0))
+        field_capacity = soil.field_capacity
+        wilting_point = soil.wilting_point
+        if field_capacity > wilting_point:
+            rew = (theta - wilting_point) / (field_capacity - wilting_point)
+            rew = max(0.0, min(1.0, rew))
+            sensor_depletion = 1.0 - rew
+            moisture_assessment = (
+                "sufficient" if rew >= 0.55 else "marginal" if rew >= 0.30 else "low"
+            )
+            irrigation_needed = sensor_depletion >= crop.depletion_fraction_p
+        demand_base = classify_demand(
+            depletion_fraction=sensor_depletion,
+            precipitation_last_7d_mm=rain_7d,
+            etc_mm_day=latest_etc,
+            stress_days=0,
+            moderate_fraction=crop.depletion_fraction_p,
+            crop_name=crop.name,
+        )
+        demand = DemandClassification(
+            level=demand_base.level,
+            reasons=[
+                (
+                    f"Robot probe reading: {probe.latest_pct:.1f}% volumetric water at the "
+                    f"sensor location ({probe.latest_measured_at or 'time unknown'}). "
+                    "Relative extractable water is "
+                    + (f"{rew * 100:.0f}%" if sensor_depletion is not None else "unknown")
+                    + "."
+                ),
+                (
+                    "This is one measurement point, not a whole-field average. "
+                    "The root-zone weather balance is shown separately."
+                ),
+                *demand_base.reasons,
+            ],
+        )
+    else:
+        demand = classify_demand(
+            depletion_fraction=balance.depletion_fraction,
+            precipitation_last_7d_mm=rain_7d,
+            etc_mm_day=latest_etc,
+            stress_days=balance.stress_days,
+            moderate_fraction=crop.depletion_fraction_p,
+            crop_name=crop.name,
+        )
+        if probe is not None and probe.status == "stale":
+            demand = DemandClassification(
+                level=demand.level,
+                reasons=[
+                    "Robot data unavailable: the latest probe reading is stale, so the "
+                    "demand class comes from the root-zone weather balance.",
+                    *demand.reasons,
+                ],
+            )
+
     confidence: ConfidenceResult = assess_confidence(
         ConfidenceFactors(
             et0_coverage=coverage,
@@ -325,10 +570,72 @@ def analyze_irrigation(
         irrigation_system=field.irrigation_system,
     )
 
+    water_requirement = _build_water_requirement(
+        probe=probe,
+        soil=soil,
+        crop=crop,
+        stage=stage_out,
+        field=field,
+        robot_fresh=robot_fresh,
+        bucket_net_mm=balance.final_depletion_mm,
+        bucket_gross_mm=gross_requirement,
+        bucket_confidence=confidence.level,
+    )
+
+    if robot_fresh and probe is not None:
+        limits.append(
+            "Robot soil moisture is a single probe point, not a whole-field average; "
+            "spatial variability is not measured."
+        )
+    elif probe is not None and probe.status == "stale":
+        limits.append(
+            "Robot data unavailable: the latest probe reading is older than the freshness "
+            "window, so the root-zone weather balance drives this analysis."
+        )
+    elif env.is_demo:
+        limits.append(
+            "Robot data unavailable in demo mode: the cached snapshot contains no live "
+            "robot readings."
+        )
+
     latest_soil_wetness = _latest_value(points, "soil_moisture_root_fraction")
     latest_soil_wetness_date = _latest_value_date(points, "soil_moisture_root_fraction")
 
     drivers: list[Driver] = [
+        Driver(
+            key="robot_soil_moisture",
+            label="Robot soil moisture",
+            value=probe.latest_pct if robot_fresh and probe is not None else None,
+            unit="% volumetric",
+            interpretation=(
+                f"Measured by the robot on {probe.latest_measured_at} at the sensor location; "
+                "this is the primary irrigation signal."
+                if robot_fresh and probe is not None
+                else (
+                    "Robot data unavailable: no current probe reading; not replaced with "
+                    "modelled or satellite values."
+                )
+            ),
+        ),
+        Driver(
+            key="moisture_assessment",
+            label="Is moisture sufficient?",
+            value=moisture_assessment,
+            unit=None,
+            interpretation=(
+                "Sufficient: extractable water is above 55% of the refill range."
+                if moisture_assessment == "sufficient"
+                else (
+                    "Marginal: extractable water is between 30% and 55%."
+                    if moisture_assessment == "marginal"
+                    else (
+                        "Low: extractable water is below 30%; refill is likely needed."
+                        if moisture_assessment == "low"
+                        else "Unknown: no current robot reading, so sufficiency cannot be measured."
+                    )
+                )
+            ),
+        ),
         Driver(
             key="rain_7d",
             label="Rainfall, last 7 days",
@@ -391,7 +698,20 @@ def analyze_irrigation(
         status="ok",
         demand=demand.level,
         demand_reasons=demand.reasons,
-        confidence=ConfidenceOut(level=confidence.level, reasons=confidence.reasons),
+        confidence=ConfidenceOut(
+            level=confidence.level,
+            reasons=[
+                *confidence.reasons,
+                (
+                    "A current robot soil-moisture reading anchors this analysis."
+                    if robot_fresh
+                    else (
+                        "No current robot soil-moisture reading; the estimate relies on "
+                        "coarse-grid weather and modelled soil water."
+                    )
+                ),
+            ],
+        ),
         computed_for=computed_for,
         stage=stage_out,
         et0_mm_day=latest_et0,
@@ -402,6 +722,10 @@ def analyze_irrigation(
         net_requirement_mm=net_requirement,
         gross_requirement_mm=gross_requirement,
         application_efficiency=efficiency,
+        robot_soil_moisture=robot_reading,
+        moisture_assessment=moisture_assessment,
+        irrigation_needed=irrigation_needed,
+        water_requirement=water_requirement,
         drivers=drivers,
         missing_inputs=missing_inputs,
         limitations=limits,

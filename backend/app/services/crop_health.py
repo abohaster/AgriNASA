@@ -110,7 +110,7 @@ def analyze_health(
             ),
             missing_inputs=[],
             limitations=[
-                GLOBAL_LIMITATIONS[2],
+                "The crop-health module reports environmental stress indicators only; it does not diagnose disease or pests.",
                 GLOBAL_LIMITATIONS[0],
                 "The crop season has ended; weather after harvest does not describe crop health.",
                 *environment_service.trim_limitations(env),
@@ -188,7 +188,7 @@ def analyze_health(
     missing_inputs.extend(irrigation.missing_inputs)
 
     limitations = [
-        GLOBAL_LIMITATIONS[2],
+        "The crop-health module reports environmental stress indicators only; it does not diagnose disease or pests.",
         GLOBAL_LIMITATIONS[0],
         "Stress thresholds use the crop's FAO-56 heat and frost limits and its depletion fraction, with stress at 80% of total available water; they are agronomic heuristics, not calibrated yield predictions.",
         "A rainfall anomaly normal is a 30-year monthly climatology, not a forecast for this season.",

@@ -110,7 +110,7 @@ def current_weather(latitude: float, longitude: float) -> dict[str, Any] | None:
                 "wind_gusts_10m",
             ]
         ),
-        "hourly": "relative_humidity_2m,soil_moisture_0_to_7cm,soil_temperature_6cm",
+        "hourly": "relative_humidity_2m,soil_moisture_0_to_7cm",
         "daily": "precipitation_sum,et0_fao_evapotranspiration,shortwave_radiation_sum",
         "forecast_days": "1",
         "timezone": "auto",
@@ -134,18 +134,14 @@ def current_weather(latitude: float, longitude: float) -> dict[str, Any] | None:
         return None
 
     soil_moisture = None
-    soil_temperature = None
     humidity_hourly = None
     if index is not None:
         moisture_values = hourly.get("soil_moisture_0_to_7cm") or []
-        temperature_values = hourly.get("soil_temperature_6cm") or []
         humidity_values = hourly.get("relative_humidity_2m") or []
         if index < len(moisture_values):
             soil_moisture = _num(moisture_values[index])
             if soil_moisture is not None:
                 soil_moisture *= 100.0  # m³/m³ → percent by volume
-        if index < len(temperature_values):
-            soil_temperature = _num(temperature_values[index])
         if index < len(humidity_values):
             humidity_hourly = _num(humidity_values[index])
 
@@ -173,7 +169,6 @@ def current_weather(latitude: float, longitude: float) -> dict[str, Any] | None:
         "wind_direction_deg": _num(current.get("wind_direction_10m")),
         "wind_gust_ms": _num(current.get("wind_gusts_10m")),
         "soil_moisture_0_7cm_pct": soil_moisture,
-        "soil_temperature_6cm_c": soil_temperature,
         "et0_today_mm": _num((daily.get("et0_fao_evapotranspiration") or [None])[0]),
         "rain_today_mm": _num((daily.get("precipitation_sum") or [None])[0]),
         "solar_today_mj_m2": _num((daily.get("shortwave_radiation_sum") or [None])[0]),
@@ -278,7 +273,7 @@ def hourly_daily_means(
     start: date,
     end: date,
 ) -> dict[str, dict[str, float]] | None:
-    """Daily means of humidity and 0-7 cm soil state from hourly archive data.
+    """Daily means of humidity and 0-7 cm soil moisture from hourly archive data.
 
     Open-Meteo does not expose daily aggregates for these variables, and the
     hourly payload grows quickly, so callers keep this window to about a year.
@@ -290,7 +285,7 @@ def hourly_daily_means(
         "longitude": f"{longitude:.4f}",
         "start_date": start.isoformat(),
         "end_date": end.isoformat(),
-        "hourly": "relative_humidity_2m,soil_moisture_0_to_7cm,soil_temperature_0_to_7cm",
+        "hourly": "relative_humidity_2m,soil_moisture_0_to_7cm",
         "timezone": "auto",
     }
     try:
@@ -311,7 +306,6 @@ def hourly_daily_means(
     columns = {
         "humidity_pct": hourly.get("relative_humidity_2m") or [],
         "soil_moisture_pct": hourly.get("soil_moisture_0_to_7cm") or [],
-        "soil_temperature_c": hourly.get("soil_temperature_0_to_7cm") or [],
     }
     for index, stamp in enumerate(times):
         day = str(stamp)[:10]
