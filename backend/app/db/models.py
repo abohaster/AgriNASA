@@ -91,6 +91,9 @@ class Field(Base):
     sensor_readings: Mapped[list["SensorReading"]] = relationship(
         back_populates="field", cascade="all, delete-orphan"
     )
+    robot_images: Mapped[list["RobotImage"]] = relationship(
+        back_populates="field", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (Index("ix_fields_user_crop", "user_id", "crop_id"),)
 
@@ -295,6 +298,13 @@ class SensorReading(Base):
     air_temp_c: Mapped[float | None] = mapped_column(Float)
     humidity_pct: Mapped[float | None] = mapped_column(Float)
     distance_cm: Mapped[float | None] = mapped_column(Float)
+    # Optional provenance supplied by the node itself. They identify which
+    # probe took this reading and where; absent values are stored as NULL and
+    # never inferred by the server.
+    sensor_id: Mapped[str | None] = mapped_column(String(64))
+    latitude: Mapped[float | None] = mapped_column(Float)
+    longitude: Mapped[float | None] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(String(24), default="ok", nullable=False)
     measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -302,6 +312,93 @@ class SensorReading(Base):
     field: Mapped[Field] = relationship(back_populates="sensor_readings")
 
     __table_args__ = (Index("ix_sensor_readings_field_measured", "field_id", "measured_at"),)
+
+
+class RobotImage(Base):
+    """A plant photo captured by a field robot's camera.
+
+    The file itself lives on the server's media volume; this row stores the
+    metadata the UI and the AI review need. `sha256` identifies the exact bytes
+    so a file cannot silently change underneath an analysis.
+    """
+
+    __tablename__ = "robot_images"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    field_id: Mapped[int] = mapped_column(
+        ForeignKey("fields.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    device_id: Mapped[int | None] = mapped_column(
+        ForeignKey("robot_devices.id", ondelete="SET NULL")
+    )
+    crop_id: Mapped[str] = mapped_column(String(40), nullable=False)
+    growth_stage: Mapped[str | None] = mapped_column(String(40))
+    filename: Mapped[str] = mapped_column(String(160), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    camera_id: Mapped[str | None] = mapped_column(String(64))
+    latitude: Mapped[float | None] = mapped_column(Float)
+    longitude: Mapped[float | None] = mapped_column(Float)
+    note: Mapped[str | None] = mapped_column(String(255))
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    field: Mapped[Field] = relationship(back_populates="robot_images")
+    analyses: Mapped[list["PlantImageAnalysis"]] = relationship(
+        back_populates="image", cascade="all, delete-orphan", order_by="PlantImageAnalysis.id"
+    )
+
+    __table_args__ = (Index("ix_robot_images_field_captured", "field_id", "captured_at"),)
+
+
+class HealthyPlantReference(Base):
+    """A healthy reference photo uploaded for one crop.
+
+    References are opt-in: the comparison is reported as unavailable until the
+    operator supplies a real image. No synthetic reference is ever generated.
+    """
+
+    __tablename__ = "healthy_plant_references"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    crop_id: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    filename: Mapped[str] = mapped_column(String(160), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_note: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class PlantImageAnalysis(Base):
+    """One AI vision review of one robot image.
+
+    The label vocabulary is deliberately cautious; `confidence` is the model's
+    self-reported certainty and is shown as a percentage, never as a diagnosis.
+    """
+
+    __tablename__ = "plant_image_analyses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    image_id: Mapped[int] = mapped_column(
+        ForeignKey("robot_images.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(24), nullable=False)  # ok | unavailable
+    label: Mapped[str | None] = mapped_column(String(48))
+    confidence: Mapped[float | None] = mapped_column(Float)
+    summary: Mapped[str | None] = mapped_column(Text)
+    observations_json: Mapped[str | None] = mapped_column(Text)
+    comparison_json: Mapped[str | None] = mapped_column(Text)
+    limitations_json: Mapped[str | None] = mapped_column(Text)
+    provider: Mapped[str | None] = mapped_column(String(24))
+    model: Mapped[str | None] = mapped_column(String(120))
+    reference_image_id: Mapped[int | None] = mapped_column(Integer)
+    previous_image_id: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    image: Mapped[RobotImage] = relationship(back_populates="analyses")
 
 
 class PublicApiKey(Base):
