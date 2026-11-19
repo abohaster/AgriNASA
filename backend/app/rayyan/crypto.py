@@ -71,7 +71,7 @@ class KeyCipher:
             self._fernet = Fernet(key)
         except (ValueError, TypeError) as exc:
             raise CipherConfigurationError(
-                "The RAYAN encryption key is not a valid Fernet key."
+                "The Fale7 encryption key is not a valid Fernet key."
             ) from exc
 
     @classmethod

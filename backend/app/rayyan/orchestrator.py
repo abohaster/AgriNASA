@@ -112,11 +112,11 @@ def resolve_credential(session, settings: RayyanSettings) -> Credential:
     if row is not None:
         if row["status"] == "invalid":
             raise KeyInvalidError(
-                "The active Google Gemini key is marked invalid, so RAYAN will not send "
+                "The active Google Gemini key is marked invalid, so Fale7 will not send "
                 "requests with it.",
                 details=(
                     "Your saved keys are preserved. Validate the key again or activate "
-                    "another saved key in RAYAN API Settings."
+                    "another saved key in Fale7 API settings."
                 ),
             )
         try:
@@ -147,9 +147,9 @@ def resolve_credential(session, settings: RayyanSettings) -> Credential:
         )
 
     raise NoActiveKeyError(
-        "No Google Gemini API key is active, so RAYAN cannot send AI requests.",
+        "No Google Gemini API key is active, so Fale7 cannot send AI requests.",
         details=(
-            "Open RAYAN API Settings, add a key, and activate it. No AI request was sent "
+            "Open Fale7 API settings, add a key, and activate it. No AI request was sent "
             "and no answer was simulated."
         ),
     )
@@ -221,7 +221,7 @@ async def ask(
         f"rayyan:{client_key}", settings.max_requests_per_hour
     ):
         raise RateLimitedError(
-            "The RAYAN request limit for this hour was reached.",
+            "The Fale7 request limit for this hour was reached.",
             details=(
                 f"Limit: {settings.max_requests_per_hour} requests per hour per client. "
                 "The active key was not changed."
@@ -386,14 +386,14 @@ async def _choose_model(
                     "Google Gemini rejected the active API key.",
                     details=(
                         "The key is preserved and marked invalid. Validate it again or "
-                        "activate another saved key in RAYAN API Settings."
+                        "activate another saved key in Fale7 API settings."
                     ),
                 ) from exc
             if exc.code == "GEMINI_QUOTA_EXCEEDED":
                 _mark_key_error(credential, exc)
                 details = (
                     "The key is preserved and still active. Wait for the quota to reset "
-                    "or activate another valid saved key in RAYAN API Settings."
+                    "or activate another valid saved key in Fale7 API settings."
                 )
                 if exc.retry_after:
                     details = f"{details} Google suggests retrying after {exc.retry_after}."
@@ -448,7 +448,7 @@ async def _choose_model(
                 "unavailable or unresponsive"
             )
         note = (
-            f"RAYAN used {result.model} instead of the saved model {credential.model} "
+            f"Fale7 used {result.model} instead of the saved model {credential.model} "
             f"{reason}. The saved key was preserved."
         )
         if credential.saved:
@@ -471,7 +471,7 @@ def _handle_generation_error(
             "Google Gemini rejected the active API key.",
             details=(
                 "The key is preserved and marked invalid. Validate it again or activate "
-                "another saved key in RAYAN API Settings. No AI answer was generated."
+                "another saved key in Fale7 API settings. No AI answer was generated."
             ),
         ) from exc
 
@@ -479,7 +479,7 @@ def _handle_generation_error(
         _mark_key_error(credential, exc)
         details = (
             "The key is preserved and still active. Activate another valid saved key in "
-            "RAYAN API Settings, or wait for the quota to reset."
+            "Fale7 API settings, or wait for the quota to reset."
         )
         if exc.retry_after:
             details = f"{details} Google suggests retrying after {exc.retry_after}."
@@ -493,7 +493,7 @@ def _handle_generation_error(
         raise ModelNotFoundError(
             "The selected Gemini model is not available to this key.",
             details=(
-                "The key was preserved. Choose another model in RAYAN API Settings, then "
+                "The key was preserved. Choose another model in Fale7 API settings, then "
                 "retry."
             ),
         ) from exc

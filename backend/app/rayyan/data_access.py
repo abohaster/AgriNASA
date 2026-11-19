@@ -31,6 +31,7 @@ from app.services import crop_health, crop_intelligence, geocoding, history, ope
 from app.services import environment as environment_service
 from app.services import forecast as forecast_service
 from app.services import irrigation as irrigation_service
+from app.services import plant_images as plant_images_service
 from app.services import vegetation as vegetation_service
 from app.services.explore import polygon_area_ha
 
@@ -117,6 +118,7 @@ async def build_bundle(
             analysis_planting_date=analysis_planting,
             environment_latitude=series.latitude,
             environment_longitude=series.longitude,
+            plant_images=plant_images_service.context_block(session, field),
         )
 
         capabilities = build_registry(
@@ -172,7 +174,7 @@ async def build_bundle(
     )
     context.update(location_context["sections"])
     context["rayyan"] = {
-        "assistant": "RAYAN",
+        "assistant": "Fale7",
         "conversation_persisted": False,
         "history_turns": history_turns,
         "data_mode": mode,
@@ -227,7 +229,6 @@ def _compact_current(raw: dict[str, Any] | None) -> dict[str, Any]:
         "pressure_hpa",
         "cloud_cover_pct",
         "soil_moisture_0_7cm_pct",
-        "soil_temperature_6cm_c",
         "et0_today_mm",
         "rain_today_mm",
         "solar_today_mj_m2",

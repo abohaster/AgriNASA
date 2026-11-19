@@ -46,7 +46,7 @@ VERIFIED_MODEL_TTL_SECONDS = 600
 PROBE_LIMIT = 5
 PROBE_MAX_OUTPUT_TOKENS = 16
 PROBE_SYSTEM = (
-    "You are a connectivity check for AgriNASA RAYAN. "
+    "You are a connectivity check for AgriNASA Fale7. "
     "Answer the test prompt with one short word."
 )
 PROBE_USER = "Reply with OK and nothing else."
@@ -318,7 +318,7 @@ def probe_failure(probes: list[ModelProbe], *, action: str = "") -> Exception:
     if code == "GEMINI_QUOTA_EXCEEDED":
         details = (
             "The key is preserved and still active. Wait for the quota to reset or "
-            "activate another valid saved key in RAYAN API Settings."
+            "activate another valid saved key in Fale7 API settings."
         )
         if last is not None and last.retry_after:
             details = f"{details} Google suggests retrying after {last.retry_after}."
@@ -332,7 +332,7 @@ def probe_failure(probes: list[ModelProbe], *, action: str = "") -> Exception:
             details=(
                 summary
                 + " The saved key and model were not changed. If this persists, choose "
-                "another eligible Gemini Flash model in RAYAN API Settings."
+                "another eligible Gemini Flash model in Fale7 API settings."
                 + suffix
             ),
         )

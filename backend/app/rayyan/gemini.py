@@ -201,7 +201,7 @@ class GeminiClient:
                 raise GeminiCallError(
                     "GEMINI_TIMEOUT",
                     "Google Gemini did not respond in time. Try again, or switch keys "
-                    "in RAYAN API Settings if the problem persists.",
+                    "in Fale7 API settings if the problem persists.",
                 ) from exc
             except (httpx.HTTPError, httpx.InvalidURL) as exc:
                 logger.warning("Gemini connection failed: path=%s error=%s", path, type(exc).__name__)
@@ -312,6 +312,68 @@ class GeminiClient:
                 user=user,
                 max_output_tokens=max_output_tokens,
             )
+
+    async def generate_vision(
+        self,
+        *,
+        model: str,
+        system: str,
+        prompt: str,
+        images: list[dict[str, str]],
+        max_output_tokens: int = 900,
+    ) -> GenerationResult:
+        """Multimodal generation used only by the server-side image review.
+
+        `images` holds ``{"mime_type": ..., "data_base64": ...}`` entries. The
+        bytes never leave the backend except inside this provider request.
+        """
+        parts: list[dict] = [{"text": prompt}]
+        for image in images:
+            parts.append(
+                {
+                    "inline_data": {
+                        "mime_type": image["mime_type"],
+                        "data": image["data_base64"],
+                    }
+                }
+            )
+        body = {
+            "system_instruction": {"parts": [{"text": system}]},
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {"maxOutputTokens": max_output_tokens, "temperature": 0.2},
+        }
+        payload = await self._request(
+            "POST", f"/v1beta/models/{model}:generateContent", json=body
+        )
+        feedback = payload.get("promptFeedback") or {}
+        candidates = payload.get("candidates") or []
+        if not candidates:
+            reason = feedback.get("blockReason") or "no candidates"
+            raise GeminiCallError(
+                "GEMINI_RESPONSE_BLOCKED",
+                f"Google Gemini returned no analysis ({redact(str(reason))[:120]}). "
+                "Nothing was substituted.",
+            )
+        candidate = candidates[0]
+        finish = str(candidate.get("finishReason", "")).upper()
+        if finish in {"SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT"}:
+            raise GeminiCallError(
+                "GEMINI_RESPONSE_BLOCKED",
+                "Google Gemini blocked the image analysis. Nothing was substituted.",
+            )
+        parts_out = ((candidate.get("content") or {}).get("parts")) or []
+        text = "\n".join(
+            str(part.get("text", "")).strip()
+            for part in parts_out
+            if isinstance(part, dict) and part.get("text")
+        ).strip()
+        if not text:
+            raise GeminiCallError(
+                "GEMINI_EMPTY_RESPONSE",
+                "Google Gemini returned no usable image analysis. Nothing was substituted.",
+            )
+        usage = payload.get("usageMetadata") if isinstance(payload.get("usageMetadata"), dict) else None
+        return GenerationResult(text=text, model=model, usage=usage, api="generateContent")
 
     async def probe_generate(
         self,
@@ -472,7 +534,7 @@ class GeminiClient:
             return GeminiCallError(
                 "GEMINI_KEY_INVALID",
                 "Google Gemini rejected the API key. Check that the key is active and that "
-                "the Gemini API is enabled, then validate or replace it in RAYAN API Settings.",
+                "the Gemini API is enabled, then validate or replace it in Fale7 API settings.",
                 status=status,
                 provider_message=provider_message,
             )
@@ -489,7 +551,7 @@ class GeminiClient:
             return GeminiCallError(
                 "GEMINI_MODEL_NOT_FOUND",
                 "The selected Gemini model is not available to this key. Choose another model "
-                "in RAYAN API Settings.",
+                "in Fale7 API settings.",
                 status=status,
                 provider_message=provider_message,
             )
@@ -500,7 +562,7 @@ class GeminiClient:
             return GeminiCallError(
                 "GEMINI_MODEL_NOT_FOUND",
                 "The selected Gemini model is not supported for this key. Choose another model "
-                "in RAYAN API Settings.",
+                "in Fale7 API settings.",
                 status=status,
                 provider_message=provider_message,
             )

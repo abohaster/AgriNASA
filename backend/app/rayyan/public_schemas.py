@@ -92,6 +92,11 @@ class RecommendationOut(BaseModel):
     demand_reasons: list[str] = Field(default_factory=list)
     crop_health_status: str | None
     crop_health_reason: str | None
+    robot_soil_moisture: dict[str, Any] | None = None
+    moisture_assessment: str | None = None
+    irrigation_needed: bool | None = None
+    water_requirement: dict[str, Any] | None = None
+    plant_image: dict[str, Any] | None = None
 
 
 class ConfidenceOut(BaseModel):

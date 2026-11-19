@@ -108,8 +108,8 @@ def require_settings_access(request: Request) -> None:
             raise SettingsAuthError(
                 "API settings are protected.",
                 details=(
-                    "Send the RAYAN_SETTINGS_TOKEN configured on the server in the "
-                    "X-Rayyan-Settings-Token header."
+                    "Send the settings token configured on the server in the "
+                    "settings header."
                 ),
             )
         return
@@ -119,7 +119,7 @@ def require_settings_access(request: Request) -> None:
         raise SettingsAuthError(
             "API settings are limited to this server.",
             details=(
-                "Set RAYAN_SETTINGS_TOKEN on the server to allow remote management. "
+                "Set the server settings token to allow remote management. "
                 "Until then, add Gemini keys from the server itself."
             ),
             status_code=403,
@@ -157,7 +157,7 @@ def _get_row(session: Session, key_id: str):
     if row is None:
         raise NotFoundError(
             "Saved key not found.",
-            details="It may have been deleted. Refresh RAYAN API Settings.",
+            details="It may have been deleted. Refresh Fale7 API settings.",
         )
     return row
 
@@ -239,7 +239,7 @@ def health() -> dict:
     status_payload = availability_status(settings)
     return {
         "status": "ok",
-        "service": "RAYAN",
+        "service": "Fale7",
         "gemini_configured": status_payload.configured,
         "source": status_payload.source,
         "data_mode": status_payload.data_mode,
@@ -693,7 +693,7 @@ async def list_models(
         else:
             raise NoActiveKeyError(
                 "No Gemini key is available to list models.",
-                details="Add and validate a key in RAYAN API Settings.",
+                details="Add and validate a key in Fale7 API settings.",
             )
 
     cached = None if refresh else directory.get(cache_id)
