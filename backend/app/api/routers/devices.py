@@ -281,6 +281,10 @@ def ingest_reading(
         air_temp_c=payload.air_temp_c,
         humidity_pct=payload.humidity_pct,
         distance_cm=payload.distance_cm,
+        sensor_id=payload.sensor_id,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        status=payload.status,
         measured_at=measured,
         received_at=now,
     )

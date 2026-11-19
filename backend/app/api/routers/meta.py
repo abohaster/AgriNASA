@@ -53,7 +53,8 @@ def data_sources() -> DataSourcesResponse:
             "Most POWER variables are MERRA-2 reanalysis on a coarse grid, not on-farm sensors.",
             "NASA GIBS map tiles are visual context only; no values are read from imagery.",
             "NDVI and NDMI come from Google Earth Engine Sentinel-2 and are reported as unavailable until Earth Engine is configured.",
-            "Irrigation and crop-health values are deterministic calculations from POWER inputs.",
+            "Robot soil-moisture and camera readings are measured point observations; they do not represent the whole field.",
+            "Irrigation and crop-health values are deterministic calculations, and AI image review is an advisory visual assessment.",
         ],
     )
 
