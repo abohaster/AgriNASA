@@ -2426,6 +2426,103 @@ export const AR_MESSAGES: Record<string, string> = {
     "لا تتوفر قراءة حالية لرطوبة التربة من الروبوت. لا تستبدلها المنصة بتقدير من نموذج أو قمر صناعي.",
   "Sufficient": "كافية",
   "% vol": "% حجمي",
+
+  // ── Interactive agricultural map ─────────────────────────────────────────
+  "Agricultural map": "خريطة زراعية",
+  "Map overview": "نظرة عامة على الخريطة",
+  "Field area": "مساحة الحقل",
+  "Sensors": "المستشعرات",
+  "Robot status": "حالة الروبوت",
+  "{n} online": "{n} متصل",
+  "No live feed": "لا اتصال مباشر",
+  "Zoom in": "تكبير",
+  "Zoom out": "تصغير",
+  "Reset view": "إعادة ضبط العرض",
+  "Exit fullscreen": "الخروج من ملء الشاشة",
+  "Fullscreen": "ملء الشاشة",
+  "Click the map to add a corner. The outline is saved only after you analyse it.":
+    "انقر على الخريطة لإضافة رأس. لا يُحفظ الحد إلا بعد تحليله.",
+  "No saved fields yet. Search, draw a boundary, or create a field to see it here.":
+    "لا توجد حقول محفوظة بعد. ابحث أو ارسم حدًا أو أنشئ حقلًا ليظهر هنا.",
+  "Field information": "معلومات الحقل",
+  "Add field": "إضافة حقل",
+  "No saved fields yet. Create a field to draw its boundary and collect robot readings.":
+    "لا توجد حقول محفوظة بعد. أنشئ حقلًا لرسم حدوده وجمع قراءات الروبوت.",
+  "Selected field": "الحقل المحدد",
+  "Boundary": "الحدود",
+  "saved boundary": "حدود محفوظة",
+  "coordinate point": "نقطة إحداثيات",
+  "Open field": "فتح الحقل",
+  "Robot page": "صفحة الروبوت",
+  "Historical": "سابق",
+  "No readings yet": "لا قراءات بعد",
+  "Last reading": "آخر قراءة",
+  "Pair a robot and let it post readings. Nothing is simulated here.":
+    "اربط روبوتًا ودعه يرسل القراءات. لا شيء محاكى هنا.",
+  "Last position": "آخر موقع",
+  "Last known position": "آخر موقع معروف",
+  "No robot position has been uploaded. The map does not invent one.":
+    "لم يُرفع أي موقع للروبوت. لا تختلق الخريطة موقعًا.",
+  "A probe measures one point and one depth. It does not represent the whole field.":
+    "يقيس المجس نقطة واحدة وعمقًا واحدًا. ولا يمثّل الحقل كله.",
+  "Sensors with GPS": "مستشعرات بإحداثيات GPS",
+  "No sensor reading includes latitude and longitude yet.":
+    "لا تتضمن أي قراءة مستشعر خط العرض وخط الطول بعد.",
+  "Select a field on the map or in this list to see its boundary, robot status and sensor readings.":
+    "اختر حقلًا على الخريطة أو من هذه القائمة لعرض حدوده وحالة الروبوت وقراءات المستشعرات.",
+  "Layers": "الطبقات",
+  "Hide": "إخفاء",
+  "Show": "إظهار",
+  "Basemap": "خريطة الأساس",
+  "Overlays": "طبقات إضافية",
+  "NDVI (Sentinel-2)": "NDVI (Sentinel-2)",
+  "Sentinel-2 · 10 m · Google Earth Engine": "Sentinel-2 · 10 م · Google Earth Engine",
+  "Reload NDVI": "إعادة تحميل NDVI",
+  "Load NDVI for {field}": "تحميل NDVI لحقل {field}",
+  "Load NDVI": "تحميل NDVI",
+  "Fetches real Sentinel-2 tiles from Earth Engine for the selected field.":
+    "يجلب شرائح Sentinel-2 الحقيقية من Earth Engine للحقل المحدد.",
+  "Select a field first. NDVI is only shown for a real field geometry.":
+    "اختر حقلًا أولًا. لا يُعرض NDVI إلا لهندسة حقل حقيقية.",
+  "Loading NDVI tiles from Earth Engine…": "جارٍ تحميل شرائح NDVI من Earth Engine…",
+  "Temperature and precipitation are not connected as map layers. Their values are reported in Analytics.":
+    "درجة الحرارة والأمطار غير مرتبطتين كطبقات خريطة. وتُعرض قيمهما في التحليلات.",
+  "Active basemap": "خريطة الأساس النشطة",
+  "Legend": "المفتاح",
+  "Field boundary": "حدود الحقل",
+  "Robot path · last 6 hours": "مسار الروبوت · آخر 6 ساعات",
+  "Robot path · historical": "مسار الروبوت · سابق",
+  "Robot latest position": "أحدث موقع للروبوت",
+  "NDVI · Sentinel-2 · 10 m": "NDVI · Sentinel-2 · 10 م",
+  "Google Earth Engine": "Google Earth Engine",
+  "latest reading": "أحدث قراءة",
+  "GPS positions are reported by the robot and shown exactly as received. No movement is simulated.":
+    "تُرسل مواقع GPS من الروبوت وتُعرض كما وردت تمامًا. ولا تُحاكى أي حركة.",
+  "Robot path · {n} historical GPS positions": "مسار الروبوت · {n} موقع GPS سابق",
+  "Robot path · {n} GPS positions in the last 6 hours":
+    "مسار الروبوت · {n} موقع GPS خلال آخر 6 ساعات",
+  "Sensor status": "حالة المستشعر",
+  "Satellite imagery": "صور الأقمار الصناعية",
+  "Street map": "خريطة الشوارع",
+  "NASA daily imagery": "صور NASA اليومية",
+  "Community street detail, to 19 zoom levels":
+    "تفاصيل الشوارع من المجتمع حتى 19 مستوى تكبير",
+  "250 m · true colour · about 3-day lag": "250 م · ألوان طبيعية · تأخر نحو 3 أيام",
+  "≈0.3–0.6 m where high-resolution coverage exists":
+    "نحو 0.3–0.6 م حيث تتوفر تغطية عالية الدقة",
+  "Saved field boundaries, on-farm sensor positions and the robot's stored GPS trail on one map. Search a place, click for conditions, or draw a field outline for analysis.":
+    "حدود الحقول المحفوظة ومواقع المستشعرات الميدانية ومسار GPS المحفوظ للروبوت على خريطة واحدة. ابحث عن مكان أو انقر لمعرفة الأحوال أو ارسم حدًا للحقل للتحليل.",
+  "Drawing": "جارٍ الرسم",
+  "Loading fields and sensors…": "جارٍ تحميل الحقول والمستشعرات…",
+  "Fields and sensors unavailable": "الحقول والمستشعرات غير متاحة",
+  "The field list could not be loaded.": "تعذّر تحميل قائمة الحقول.",
+  "Scroll is left to the page; use the map buttons to zoom. Click a boundary, sensor or robot marker for details.":
+    "يُترك التمرير للصفحة؛ استخدم أزرار الخريطة للتكبير. انقر على حد أو مستشعر أو علامة الروبوت لعرض التفاصيل.",
+  "Satellite imagery is orientation only. Field boundaries are drawn by you. Robot positions and sensor values are measurements uploaded by your robot — no positions or readings are simulated. NDVI appears only after Earth Engine returns real Sentinel-2 tiles.":
+    "الصور الفضائية للتوجيه فقط. حدود الحقول رسمتها أنت. مواقع الروبوت وقيم المستشعرات قياسات رفعها روبوتك — ولا تُحاكى أي مواقع أو قراءات. ولا يظهر NDVI إلا بعد أن يُرجع Earth Engine شرائح Sentinel-2 حقيقية.",
+  "Earth Engine returned no NDVI tile for this field in the last 30 days. Try again later or check the Satellite page.":
+    "لم يُرجع Earth Engine أي شريحة NDVI لهذا الحقل خلال آخر 30 يومًا. أعد المحاولة لاحقًا أو راجع صفحة الأقمار الصناعية.",
+  "NDVI could not be loaded.": "تعذّر تحميل NDVI.",
 };
 
 
