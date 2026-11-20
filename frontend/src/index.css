@@ -166,6 +166,110 @@
     filter: brightness(0.72) invert(1) hue-rotate(180deg) saturate(0.65)
       contrast(0.95);
   }
+
+  /* ── Agricultural map markers ────────────────────────────────────────── */
+  .agri-map-icon {
+    background: transparent;
+    border: 0;
+  }
+
+  .agri-sensor {
+    display: flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 2px solid #fbfbf7;
+    color: #fbfbf7;
+    box-shadow: 0 2px 6px rgba(15, 46, 35, 0.35);
+  }
+
+  .agri-sensor svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .agri-sensor--soil_moisture {
+    background: #2f6f8f;
+  }
+
+  .agri-sensor--air_temperature {
+    background: #b4693a;
+  }
+
+  .agri-sensor--humidity {
+    background: #3c7a63;
+  }
+
+  .agri-sensor--distance {
+    background: #7a6f61;
+  }
+
+  .agri-robot {
+    position: relative;
+    display: flex;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    border: 2px solid #fbfbf7;
+    color: #fbfbf7;
+    box-shadow: 0 3px 8px rgba(15, 46, 35, 0.4);
+  }
+
+  .agri-robot svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .agri-robot.is-live {
+    background: #1b4e3a;
+  }
+
+  .agri-robot.is-stale {
+    background: #8a7a67;
+  }
+
+  .agri-robot__pulse {
+    position: absolute;
+    inset: -5px;
+    border-radius: 12px;
+    border: 2px solid rgba(53, 122, 92, 0.65);
+    animation: agri-map-pulse 2s ease-out infinite;
+  }
+
+  .leaflet-popup-content-wrapper,
+  .leaflet-popup-tip {
+    @apply bg-paper text-ink;
+  }
+
+  .leaflet-popup-content {
+    margin: 0;
+    padding: 0.75rem;
+  }
+
+  .map-shell:fullscreen {
+    height: 100vh !important;
+    width: 100vw !important;
+    background: #0f1813;
+  }
+}
+
+@keyframes agri-map-pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
 }
 
 @layer components {
