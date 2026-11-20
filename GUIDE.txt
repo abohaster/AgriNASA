@@ -156,6 +156,10 @@ HOME
 FIELDS
   Lists your fields and the current day after planting.
 
+MAP (/explore)
+  The interactive agricultural map: saved boundaries, robot GPS trail and sensor
+  positions over satellite imagery. See section 15 for components and data flow.
+
 USER GUIDE (/guide)
   A step-by-step walkthrough for Egyptian users. Switch between English and
   Arabic at the top of the page; Arabic switches the whole page to right-to-left
@@ -312,7 +316,7 @@ explains this. Never commit the token.
 11. RUNNING THE TESTS
 --------------------------------------------------------------------------------
 
-Backend (58 tests, fully offline):
+Backend (306 tests, fully offline):
 
   cd backend
   .venv/Scripts/python.exe -m pytest tests -q
@@ -341,8 +345,9 @@ backend/app/db/            SQLAlchemy models, repository, SQLite engine
 backend/app/schemas/       Pydantic request/response contracts
 backend/tests/             pytest suite
 frontend/src/pages/        Home, fields, dashboard, analytics, irrigation, health,
-                           satellite, farmer guide, assistant
+                           satellite, explore map, farmer guide, assistant
 frontend/src/components/   Layout, cards, charts, map, chat, provenance badges
+frontend/src/components/map/  Reusable map pieces (see section 15)
 
 
 --------------------------------------------------------------------------------
@@ -387,6 +392,95 @@ Dates in demo mode are historical
   [ ] The AI explains computed data only; it never calculates or changes values.
   [ ] API keys stay in the backend and out of git.
   [ ] Users see friendly errors, not stack traces.
+
+
+--------------------------------------------------------------------------------
+15. INTERACTIVE MAP (MAP PAGE, /explore)
+--------------------------------------------------------------------------------
+
+The map page is one screen: a large satellite map, a field information panel on
+one side, and a compact layer selector over the map. Every position comes from
+the backend; nothing is animated to look like live movement.
+
+COMPONENTS (frontend/src/components/map/)
+  AgriculturalMap.tsx        Leaflet container, basemap and NDVI raster layers,
+                             overlays, overview card, layer selector, legend,
+                             zoom/reset/fullscreen controls and drawing helpers.
+  mapConfig.ts               Basemap definitions (URL, attribution, resolution,
+                             zoom limits) and the 6-hour freshness window.
+  mapData.ts                 Turns API fields and readings into FieldLayerEntry:
+                             boundary, one node per GPS reading, robot track,
+                             last measurement time and online state.
+  FieldBoundary.tsx          Saved GeoJSON boundary with transparent fill and a
+                             click popup (name, crop, area, links). A field with
+                             coordinates only shows a dot and says so.
+  RobotMarker.tsx            Latest reported robot GPS point, live or stale icon.
+  RobotPath.tsx              GPS trail; solid = last 6 hours, dashed = older.
+  SensorMarker.tsx           One marker per reading that carries GPS, coloured by
+                             metric; popup lists values, units, time and coordinates.
+  MapLayerControl.tsx        Basemap radios, overlay toggles and on-demand NDVI.
+  MapLegend.tsx              Basemap source/resolution, overlay keys, NDVI scale.
+  FieldInformationPanel.tsx  Field list, selected-field details, robot status and
+                             the list of sensors that have GPS.
+
+DATA FLOW
+  1. ExploreMap.tsx calls GET /api/fields.
+  2. For each field it calls GET /api/fields/{id}/sensors. A failure for one
+     field does not hide the others.
+  3. buildFieldEntry() keeps the newest GPS reading per sensor, sorts the robot
+     track by measured_at, and marks a robot online only when its newest reading
+     is younger than FRESH_WINDOW_MS (6 hours).
+  4. AgriculturalMap renders one FieldBoundary, RobotPath, RobotMarker and the
+     SensorMarkers per entry, filtered by the overlay checkboxes.
+  5. NDVI is never prefetched. "Load NDVI" posts to /api/satellite/fields/{id}
+     with include_tiles=true; the returned Sentinel-2 tile URL is added as a
+     raster layer with its own attribution and acquisition date.
+  6. Clicking a boundary, sensor or robot opens its popup. Clicking a field in
+     the panel flies the map to that field.
+
+LAYERS AND ATTRIBUTION
+  Satellite imagery (default)  Esri World Imagery, no key, map attribution shown;
+                               about 0.3-0.6 m where high-resolution coverage
+                               exists, up to 19 zoom levels.
+  Street map                   OpenStreetMap, no key, community data, 19 levels.
+  NASA daily imagery           NASA GIBS MODIS Terra true colour, public domain,
+                               250 m native, about a 3-day lag, upscaled past
+                               zoom 9 by the tile server.
+  NDVI                         Sentinel-2, 10 m, processed by Google Earth
+                               Engine; shown only after Earth Engine returns
+                               real tiles for the selected field.
+  Temperature / precipitation  Not connected as map layers. Their values stay in
+                               Analytics, and the panel says so instead of
+                               pointing at an empty layer.
+
+  Tile providers are external services. If you add or change a URL, check its
+  terms, attribution and key limits first. Never put a provider key in frontend
+  code; proxy the request through the backend.
+
+HONESTY RULES ON THIS PAGE
+  * No movement is simulated. The robot marker is the last reported GPS point;
+    "Live" means a reading arrived within 6 hours, otherwise it is labelled
+    "Last known position" with the old timestamp.
+  * Readings without latitude/longitude are not placed on the map. The panel
+    says "No sensor reading includes latitude and longitude yet".
+  * Empty states explain the next action (create a field, pair a robot, draw an
+    outline). NDVI shows the Sentinel-2 acquisition date and, on failure, the
+    backend message with a Retry button.
+  * The map footer repeats that imagery is orientation only and that positions
+    and readings come from the user's equipment.
+
+MODIFYING THE MAP
+  * Default basemap: change the initial useState("satellite") in ExploreMap.tsx.
+  * Add a basemap: extend BasemapId, BASEMAP_ORDER and basemapDefinition() in
+    mapConfig.ts. The selector and legend pick it up automatically.
+  * Add a sensor metric: extend SENSOR_METRICS and metricsFor() in mapData.ts,
+    add a colour variant in index.css (.agri-sensor--<key>) and a glyph in
+    mapIcons.ts.
+  * Freshness window: FRESH_WINDOW_MS in mapConfig.ts. Keep the legend and the
+    Arabic strings in messages.ar.ts in step if you change the label.
+  * Map height: pass height={...} to AgriculturalMap (default 620 px).
+  * Drawing and point picking still call saveExploreGeometry and then open the
+    location overview. Keep that contract if you change the tools row.
 
 ================================================================================
 End of guide.
